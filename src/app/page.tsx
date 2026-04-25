@@ -8,9 +8,11 @@ import { TopBar } from '@/components/layout/TopBar';
 import { SettingsModal } from '@/components/layout/SettingsModal';
 import { useAgentStore } from '@/store/agent';
 import { useScheduler } from '@/hooks/useScheduler';
+import { useGlobalShortcuts } from '@/hooks/useGlobalShortcuts';
 
 export default function Home() {
   useScheduler();
+  useGlobalShortcuts();
 
   useEffect(() => {
     // Read synchronously from store so Strict Mode double-fire is safe:

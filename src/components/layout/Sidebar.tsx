@@ -7,8 +7,10 @@ import { cn } from '@/lib/utils';
 import {
   Plus, Search, BookOpen, Clock,
   MessageSquare, Trash2, Gift,
-  Bot, Settings,
+  Bot, Settings, Download,
 } from 'lucide-react';
+import { exportCurrentSession } from '@/lib/exportSession';
+import { toast } from '@/components/ui/Toast';
 
 
 export function Sidebar() {
@@ -110,6 +112,19 @@ export function Sidebar() {
           >
             <MessageSquare className="w-3.5 h-3.5 shrink-0 opacity-50" />
             <span className="text-xs flex-1 truncate">{session.title}</span>
+            <button
+              onClick={e => {
+                e.stopPropagation();
+                const msgs = useAgentStore.getState().messagesBySession[session.id] ?? [];
+                const ok = exportCurrentSession(session, msgs);
+                if (ok) toast.success('Exported', `${msgs.length} messages saved`);
+                else toast.warn('Empty session', 'Nothing to export');
+              }}
+              title="Export as Markdown"
+              className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:text-sky-400 transition-opacity"
+            >
+              <Download className="w-3 h-3" />
+            </button>
             {sessions.length > 1 && (
               <button
                 onClick={e => { e.stopPropagation(); if (confirm('Delete?')) deleteSession(session.id); }}

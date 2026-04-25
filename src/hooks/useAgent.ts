@@ -3,6 +3,7 @@
 import { useCallback } from 'react';
 import { useAgentStore } from '@/store/agent';
 import { Message, Plan, ThinkingPhase, ToolCall, SubAgent, BackgroundJob } from '@/types';
+import { toast } from '@/components/ui/Toast';
 
 function uuid(): string {
   return typeof crypto !== 'undefined'
@@ -179,6 +180,7 @@ export function useAgent() {
               setIsStreaming(false);
             } else if (event.type === 'error') {
               console.error('Agent error:', event.message);
+              toast.error('Agent error', String(event.message ?? 'Unknown error'));
               setPhase('idle');
               setIsStreaming(false);
             }
@@ -189,6 +191,7 @@ export function useAgent() {
       }
     } catch (err) {
       console.error('Send error:', err);
+      toast.error('Connection failed', err instanceof Error ? err.message : 'Could not reach agent');
     } finally {
       setPhase('idle');
       setIsStreaming(false);

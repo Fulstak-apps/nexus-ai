@@ -310,10 +310,21 @@ export async function* runAgentLoop(
         }
         messages.push({ role: 'assistant', content: turnText || null, tool_calls: assistantToolCalls });
 
-        // Execute tools
+        // Execute tools (single execution — accumulate result for both event + message)
         for (const acc of toolCallAccum.values()) {
-          yield* executeToolCall({ id: acc.id, name: acc.name, argsJson: acc.arguments }, plan);
-          const resultContent = await getToolResult(acc.name, acc.arguments);
+          let params: Record<string, unknown> = {};
+          try { params = JSON.parse(acc.arguments || '{}') as Record<string, unknown>; } catch { /* ignore */ }
+          const call: ToolCall = { id: acc.id, tool: acc.name as ToolCall['tool'], params, startedAt: Date.now() };
+
+          yield { type: 'tool_call', call };
+          const result = await executeTool(call);
+          yield { type: 'tool_result', callId: acc.id, output: result.output, error: result.error };
+
+          const resultContent = result.error
+            ? `Error: ${result.error}`
+            : typeof result.output === 'string'
+              ? result.output
+              : JSON.stringify(result.output).slice(0, 8000);
           messages.push({ role: 'tool', tool_call_id: acc.id, content: resultContent });
         }
 
@@ -473,40 +484,4 @@ function markStepsComplete(plan: Plan | null) {
 
 function advanceStep(_plan: Plan | null) { /* step tracking handled inline */ }
 
-async function getToolResult(name: string, argsJson: string): Promise<string> {
-  let params: Record<string, unknown> = {};
-  try { params = JSON.parse(argsJson || '{}') as Record<string, unknown>; } catch { /* ignore */ }
-  const call: ToolCall = {
-    id: randomUUID(),
-    tool: name as ToolCall['tool'],
-    params,
-    startedAt: Date.now(),
-  };
-  const result = await executeTool(call);
-  return result.error
-    ? `Error: ${result.error}`
-    : typeof result.output === 'string'
-      ? result.output
-      : JSON.stringify(result.output).slice(0, 8000);
-}
-
-async function* executeToolCall(
-  { id, name, argsJson }: { id: string; name: string; argsJson: string },
-  _plan: Plan | null,
-): AsyncGenerator<AgentEvent> {
-  let params: Record<string, unknown> = {};
-  try { params = JSON.parse(argsJson || '{}') as Record<string, unknown>; } catch { /* ignore */ }
-
-  const call: ToolCall = {
-    id,
-    tool: name as ToolCall['tool'],
-    params,
-    startedAt: Date.now(),
-  };
-
-  yield { type: 'tool_call', call };
-
-  const result = await executeTool(call);
-
-  yield { type: 'tool_result', callId: id, output: result.output, error: result.error };
-}
+// (helper removed — tool execution is inlined to prevent double-execution)
