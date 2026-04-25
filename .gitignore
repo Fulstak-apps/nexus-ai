@@ -22,7 +22,16 @@
 
 # misc
 .DS_Store
+._*
 *.pem
+
+# runtime data (sandbox files, memory store)
+/.nexus-sandbox
+/.nexus-memory
+
+# editor
+.idea
+.vscode
 
 # debug
 npm-debug.log*

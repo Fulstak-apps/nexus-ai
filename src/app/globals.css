@@ -1,26 +1,186 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* ── Manus exact design tokens (dark mode) ──────────────────────────────── */
+
+@theme {
+  /* Manus dark palette */
+  --color-m-bg:          #161618;
+  --color-m-bg-main:     #272728;
+  --color-m-nav:         #212122;
+  --color-m-card:        #383739;
+  --color-m-menu:        #383739;
+  --color-m-text:        #dadada;
+  --color-m-text-2:      #acacac;
+  --color-m-text-3:      #7f7f7f;
+  --color-m-text-dis:    #5f5f5f;
+  --color-m-border:      rgba(255,255,255,0.08);
+  --color-m-border-dark: rgba(255,255,255,0.16);
+  --color-m-fill-white:  rgba(255,255,255,0.06);
+  --color-m-fill-hover:  rgba(255,255,255,0.04);
+  --color-m-blue:        #1a93fe;
+  --color-m-blue-tsp:    rgba(26,147,254,0.12);
+  --color-m-success:     #25ba3b;
+  --color-m-error:       #f25a5a;
+  --color-m-warning:     #ffbf36;
+
+  /* Legacy compat */
+  --color-accent-blue:   #1a93fe;
+  --color-accent-purple: #A855F7;
+  --color-accent-teal:   #06B6D4;
+
+  /* Radii */
+  --radius-glass:    10px;
+  --radius-glass-sm: 8px;
+  --radius-glass-lg: 14px;
+
+  /* Shadows */
+  --shadow-card:     0 1px 3px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.05);
+  --shadow-elevated: 0 8px 32px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.06);
+  --shadow-glow-blue: 0 0 20px rgba(26,147,254,0.2);
+
+  /* Fonts */
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+
+  /* Animation */
+  --animate-fade-up: fadeUp 0.35s ease-out;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+@keyframes fadeUp {
+  0%   { opacity: 0; transform: translateY(10px); }
+  100% { opacity: 1; transform: translateY(0); }
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+@keyframes slideIn {
+  0%   { opacity: 0; transform: translateX(-6px); }
+  100% { opacity: 1; transform: translateX(0); }
+}
+
+/* ── Base ─────────────────────────────────────────────────────────────── */
+
+* { box-sizing: border-box; }
+
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  height: 100%;
+  color-scheme: dark;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: #272728;
+  color: #dadada;
+  font-family: var(--font-sans);
+  height: 100%;
 }
+
+/* Map legacy .dark selectors — whole app is always dark */
+.dark body { background: #272728; color: #dadada; }
+html.dark { color-scheme: dark; }
+
+/* ── Glass → Manus surface overrides ─────────────────────────────────── */
+
+.glass {
+  background: #272728;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: var(--radius-glass);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: none;
+}
+
+.dark .glass { background: #272728; border-color: rgba(255,255,255,0.08); }
+
+.glass-elevated {
+  background: #383739;
+  border: 1px solid rgba(255,255,255,0.10);
+  border-radius: var(--radius-glass);
+  box-shadow: var(--shadow-elevated);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.dark .glass-elevated { background: #383739; border-color: rgba(255,255,255,0.10); }
+
+.glass-subtle {
+  background: #212122;
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: var(--radius-glass);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.dark .glass-subtle { background: #212122; border-color: rgba(255,255,255,0.06); }
+
+/* ── Scrollbar ────────────────────────────────────────────────────────── */
+
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+
+::selection { background: rgba(26,147,254,0.3); }
+
+*:focus-visible {
+  outline: 2px solid rgba(26,147,254,0.5);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+textarea { resize: none; }
+
+/* ── Utility classes ──────────────────────────────────────────────────── */
+
+.gradient-text {
+  background: linear-gradient(135deg, #dadada 0%, #7f7f7f 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.gradient-accent {
+  background: linear-gradient(135deg, #1a93fe 0%, #A855F7 100%);
+}
+
+/* Manus pill badge */
+.manus-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 500;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.10);
+  color: #acacac;
+}
+
+/* Toggle switch (Manus style) */
+.manus-toggle {
+  position: relative;
+  width: 32px;
+  height: 18px;
+  border-radius: 9px;
+  background: rgba(255,255,255,0.15);
+  transition: background 0.2s;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.manus-toggle.on { background: #1a93fe; }
+
+.manus-toggle::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: white;
+  transition: transform 0.2s;
+}
+
+.manus-toggle.on::after { transform: translateX(14px); }
