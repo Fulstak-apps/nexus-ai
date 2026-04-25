@@ -31,6 +31,8 @@ export type AgentEvent =
   | { type: 'token'; text: string }
   | { type: 'message'; message: Message }
   | { type: 'reflection'; stepId: string; quality: string }
+  | { type: 'ask_human'; question: string; options?: string[] }
+  | { type: 'terminated'; summary: string; success: boolean }
   | { type: 'done'; finalMessage: string }
   | { type: 'error'; message: string };
 
@@ -311,6 +313,10 @@ export async function* runAgentLoop(
         messages.push({ role: 'assistant', content: turnText || null, tool_calls: assistantToolCalls });
 
         // Execute tools (single execution — accumulate result for both event + message)
+        let terminateRequested = false;
+        let terminateSummary = '';
+        let terminateSuccess = true;
+
         for (const acc of toolCallAccum.values()) {
           let params: Record<string, unknown> = {};
           try { params = JSON.parse(acc.arguments || '{}') as Record<string, unknown>; } catch { /* ignore */ }
@@ -320,12 +326,40 @@ export async function* runAgentLoop(
           const result = await executeTool(call);
           yield { type: 'tool_result', callId: acc.id, output: result.output, error: result.error };
 
+          // Special handling for control-flow tools
+          if (acc.name === 'terminate') {
+            terminateRequested = true;
+            terminateSummary = String(params.summary ?? '');
+            terminateSuccess = params.success !== false;
+          } else if (acc.name === 'ask_human') {
+            yield {
+              type: 'ask_human',
+              question: String(params.question ?? ''),
+              options: typeof params.options === 'string'
+                ? (() => { try { return JSON.parse(params.options as string) as string[]; } catch { return undefined; } })()
+                : undefined,
+            };
+          }
+
           const resultContent = result.error
             ? `Error: ${result.error}`
             : typeof result.output === 'string'
               ? result.output
               : JSON.stringify(result.output).slice(0, 8000);
           messages.push({ role: 'tool', tool_call_id: acc.id, content: resultContent });
+        }
+
+        if (terminateRequested) {
+          yield { type: 'terminated', summary: terminateSummary, success: terminateSuccess };
+          if (terminateSummary) finalText = (finalText + '\n\n' + terminateSummary).trim();
+          markStepsComplete(plan);
+          for (const step of plan?.steps ?? []) {
+            if (step.status === 'executing' || step.status === 'pending') {
+              step.status = 'completed';
+              yield { type: 'step_complete', step };
+            }
+          }
+          break;
         }
 
         // Step bookkeeping
@@ -389,6 +423,8 @@ export async function* runAgentLoop(
       messages.push({ role: 'assistant', content: turnText });
 
       // Execute each tool call
+      let terminateRequestedPE = false;
+      let terminateSummaryPE = '';
       for (const { name, params } of calls) {
         const callId = randomUUID();
         const call: ToolCall = {
@@ -404,6 +440,17 @@ export async function* runAgentLoop(
 
         yield { type: 'tool_result', callId, output: result.output, error: result.error };
 
+        if (name === 'terminate') {
+          terminateRequestedPE = true;
+          terminateSummaryPE = String(params.summary ?? '');
+        } else if (name === 'ask_human') {
+          let opts: string[] | undefined;
+          if (typeof params.options === 'string') {
+            try { opts = JSON.parse(params.options) as string[]; } catch { /* ignore */ }
+          }
+          yield { type: 'ask_human', question: String(params.question ?? ''), options: opts };
+        }
+
         const resultContent = result.error
           ? `Error: ${result.error}`
           : typeof result.output === 'string'
@@ -415,6 +462,20 @@ export async function* runAgentLoop(
           role: 'user',
           content: `Tool result for ${name}:\n${resultContent}`,
         });
+      }
+
+      if (terminateRequestedPE) {
+        yield { type: 'terminated', summary: terminateSummaryPE, success: true };
+        if (terminateSummaryPE) finalText = (finalText + '\n\n' + terminateSummaryPE).trim();
+        if (plan) {
+          for (const step of plan.steps) {
+            if (step.status === 'executing' || step.status === 'pending') {
+              step.status = 'completed';
+              yield { type: 'step_complete', step };
+            }
+          }
+        }
+        break;
       }
 
       if (plan) {

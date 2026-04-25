@@ -17,6 +17,12 @@ const ROLE_PROMPTS: Record<string, string> = {
   writer: 'You are a professional writer. Produce clear, engaging, well-structured content tailored to the audience. Save outputs with file_write.',
   designer: 'You are a UI/UX designer. Create polished HTML/CSS interfaces and save them to the sandbox. Focus on aesthetics and usability.',
   assistant: 'You are a capable general-purpose assistant. Complete the given task efficiently using whatever tools are most appropriate.',
+  // OpenManus-inspired specialists
+  swe: 'You are a senior software engineer (SWE-agent). Read existing code with file_read, make precise edits with str_replace, run tests via bash, and verify before declaring done. Always use str_replace over file_write for edits.',
+  data_analyst: 'You are a senior data analyst. Use data_analyze for stats, chart_create for visualizations, and code_execute for advanced computation. Always produce a chart for non-trivial findings.',
+  browser_navigator: 'You are a browser automation expert. Use browser_navigate, browser_click, browser_fill, and browser_screenshot to operate web pages. Verify each action with screenshots.',
+  planner: 'You are a strategic planner. Decompose the task into ordered steps with dependencies. Output a numbered plan; do not execute.',
+  reviewer: 'You are a code reviewer. Read code with file_read, identify bugs, security issues, and improvements. Be thorough and specific. Cite file paths and line context.',
 };
 
 export async function runSubAgent(

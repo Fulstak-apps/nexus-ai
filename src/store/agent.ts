@@ -103,6 +103,9 @@ interface AgentStore {
   modelLabel: string;
   selectedModelId: 'lite' | 'pro' | 'max';
 
+  // Agent ask-human prompt (when agent calls ask_human tool)
+  pendingQuestion: { question: string; options?: string[] } | null;
+
   // Mode & jobs
   agentMode: AgentMode;
   jobs: BackgroundJob[];
@@ -205,6 +208,7 @@ interface AgentStore {
   setApiKey: (key: keyof AgentStore['apiKeys'], value: string) => void;
   incrementUsage: (creditsUsed?: number) => void;
   setSelectedModel: (id: 'lite' | 'pro' | 'max') => void;
+  setPendingQuestion: (q: { question: string; options?: string[] } | null) => void;
   deleteAllData: () => void;
 }
 
@@ -223,6 +227,8 @@ export const useAgentStore = create<AgentStore>()(
       streamingText: '',
       rightPanelTab: 'reasoning',
       sidebarOpen: true,
+
+      pendingQuestion: null,
 
       agentMode: 'normal',
       jobs: [],
@@ -492,6 +498,7 @@ export const useAgentStore = create<AgentStore>()(
       })),
 
       setSelectedModel: (id) => set({ selectedModelId: id }),
+      setPendingQuestion: (q) => set({ pendingQuestion: q }),
 
       incrementUsage: (creditsUsed = 10) => set(state => ({
         usageStats: {

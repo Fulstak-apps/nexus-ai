@@ -174,6 +174,13 @@ export function useAgent() {
               setActiveAgents(event.data as SubAgent[]);
             } else if (event.type === 'orchestrator_agent_done') {
               upsertAgent(event.data as SubAgent);
+            } else if (event.type === 'ask_human') {
+              const question = String(event.question ?? '');
+              const options = Array.isArray(event.options) ? (event.options as string[]) : undefined;
+              toast.info('Agent has a question', question);
+              useAgentStore.getState().setPendingQuestion({ question, options });
+            } else if (event.type === 'terminated') {
+              toast.success('Task complete', String(event.summary ?? ''));
             } else if (event.type === 'done') {
               incrementUsage();
               setPhase('idle');

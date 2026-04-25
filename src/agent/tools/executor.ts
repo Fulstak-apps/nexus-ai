@@ -761,6 +761,145 @@ ${slideHtml}
   };
 }
 
+// ─── OpenManus-style tools ────────────────────────────────────────────────────
+
+async function handleBash(params: Record<string, unknown>): Promise<unknown> {
+  const command = String(params.command);
+  const timeout = Number(params.timeout ?? 60) * 1000;
+  const cwd = params.cwd ? sandboxPath(String(params.cwd)) : SANDBOX_ROOT;
+  await ensureSandbox();
+
+  // Block obviously destructive commands by default
+  const banned = /\brm\s+-rf\s+\/(?!\S*\.nexus-sandbox)|:\(\)\s*\{\s*:\|:&\s*\}|>\s*\/dev\/sd[a-z]/i;
+  if (banned.test(command)) throw new Error('Refused: command pattern blocked');
+
+  try {
+    const { stdout, stderr } = await execAsync(command, {
+      timeout,
+      cwd,
+      maxBuffer: 4 * 1024 * 1024,
+      shell: '/bin/bash',
+    });
+    return { stdout: stdout.slice(0, 8000), stderr: stderr.slice(0, 4000), exitCode: 0, command };
+  } catch (err) {
+    const e = err as { stdout?: string; stderr?: string; code?: number; killed?: boolean; message?: string };
+    return {
+      stdout: (e.stdout ?? '').slice(0, 8000),
+      stderr: (e.stderr ?? e.message ?? '').slice(0, 4000),
+      exitCode: e.code ?? 1,
+      timedOut: !!e.killed,
+      command,
+    };
+  }
+}
+
+async function handleStrReplace(params: Record<string, unknown>): Promise<unknown> {
+  await ensureSandbox();
+  const filePath = sandboxPath(String(params.path));
+  const oldStr = String(params.old_str);
+  const newStr = String(params.new_str);
+
+  const content = await fs.readFile(filePath, 'utf-8');
+  const occurrences = content.split(oldStr).length - 1;
+
+  if (occurrences === 0) throw new Error('old_str not found in file');
+  if (occurrences > 1) throw new Error(`old_str matches ${occurrences} times — must be unique. Add more surrounding context.`);
+
+  const updated = content.replace(oldStr, newStr);
+  await fs.writeFile(filePath, updated, 'utf-8');
+
+  // Return a small diff context
+  const idx = content.indexOf(oldStr);
+  const before = content.slice(Math.max(0, idx - 60), idx);
+  const after = content.slice(idx + oldStr.length, idx + oldStr.length + 60);
+  return {
+    edited: true,
+    path: filePath,
+    bytesBefore: content.length,
+    bytesAfter: updated.length,
+    context: `…${before}[${oldStr.slice(0, 40)}…→${newStr.slice(0, 40)}…]${after}…`,
+  };
+}
+
+// ask_human is handled at the loop level — this is a stub so the registry
+// resolves. The agent loop intercepts it and surfaces the question to the UI.
+async function handleAskHuman(params: Record<string, unknown>): Promise<unknown> {
+  return {
+    pending: true,
+    question: String(params.question),
+    options: params.options ?? null,
+    note: 'Question surfaced to user — agent should pause and await reply.',
+  };
+}
+
+// terminate is handled by the loop too; stub returns the summary.
+async function handleTerminate(params: Record<string, unknown>): Promise<unknown> {
+  return {
+    terminated: true,
+    summary: String(params.summary),
+    success: params.success !== false,
+  };
+}
+
+async function handleChartCreate(params: Record<string, unknown>): Promise<unknown> {
+  const title = String(params.title);
+  const type = String(params.type).toLowerCase();
+  const validTypes = ['line', 'bar', 'pie', 'doughnut', 'scatter'];
+  if (!validTypes.includes(type)) throw new Error(`type must be one of ${validTypes.join(', ')}`);
+
+  const labels = JSON.parse(String(params.labels)) as unknown[];
+  const rawData = JSON.parse(String(params.data));
+
+  let datasets: Array<{ label: string; data: number[]; backgroundColor?: string | string[]; borderColor?: string }>;
+  const palette = ['#4F8EF7', '#22D3EE', '#A855F7', '#F472B6', '#FBBF24', '#34D399', '#F87171', '#60A5FA'];
+
+  if (Array.isArray(rawData) && rawData.length > 0 && typeof rawData[0] === 'object' && rawData[0] !== null && 'data' in rawData[0]) {
+    datasets = (rawData as Array<{ label: string; data: number[] }>).map((ds, i) => ({
+      label: ds.label,
+      data: ds.data,
+      backgroundColor: type === 'pie' || type === 'doughnut' ? palette : palette[i % palette.length] + '80',
+      borderColor: palette[i % palette.length],
+    }));
+  } else {
+    datasets = [{
+      label: title,
+      data: rawData as number[],
+      backgroundColor: type === 'pie' || type === 'doughnut' ? palette : palette[0] + '80',
+      borderColor: palette[0],
+    }];
+  }
+
+  const html = `<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>${title}</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  body { background:#0f0f12; color:#e2e8f0; font-family:system-ui,sans-serif; margin:0; padding:40px; }
+  .wrap { max-width:900px; margin:0 auto; background:#1a1a1f; border-radius:16px; padding:32px; box-shadow:0 8px 32px rgba(0,0,0,0.4); }
+  h1 { margin:0 0 24px; font-size:24px; font-weight:700; }
+</style></head>
+<body><div class="wrap"><h1>${title}</h1><canvas id="c"></canvas></div>
+<script>
+new Chart(document.getElementById('c'), {
+  type: ${JSON.stringify(type)},
+  data: { labels: ${JSON.stringify(labels)}, datasets: ${JSON.stringify(datasets)} },
+  options: {
+    responsive: true,
+    plugins: { legend: { labels: { color:'#e2e8f0' } } },
+    scales: ${type === 'pie' || type === 'doughnut' ? '{}' : `{
+      x: { ticks: { color:'#94a3b8' }, grid: { color:'rgba(255,255,255,0.05)' } },
+      y: { ticks: { color:'#94a3b8' }, grid: { color:'rgba(255,255,255,0.05)' } }
+    }`}
+  }
+});
+</script></body></html>`;
+
+  await ensureSandbox();
+  const filename = `chart_${Date.now()}.html`;
+  await writeSandboxFile(filename, html);
+
+  return { filename, type, title, points: Array.isArray(labels) ? labels.length : 0, saved: true };
+}
+
 // ─── Dispatch ─────────────────────────────────────────────────────────────────
 
 const HANDLERS: Record<ToolName, (p: Record<string, unknown>) => Promise<unknown>> = {
@@ -781,6 +920,11 @@ const HANDLERS: Record<ToolName, (p: Record<string, unknown>) => Promise<unknown
   browser_click: handleBrowserClick,
   browser_fill: handleBrowserFill,
   browser_screenshot: handleBrowserScreenshot,
+  bash: handleBash,
+  str_replace: handleStrReplace,
+  ask_human: handleAskHuman,
+  terminate: handleTerminate,
+  chart_create: handleChartCreate,
 };
 
 export async function executeTool(call: ToolCall): Promise<ToolResult> {

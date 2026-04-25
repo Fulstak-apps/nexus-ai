@@ -3,14 +3,15 @@
 export type MessageRole = 'user' | 'assistant' | 'system' | 'tool';
 export type TaskStatus = 'pending' | 'planning' | 'executing' | 'reflecting' | 'completed' | 'failed';
 export type ToolName =
-  | 'file_read' | 'file_write' | 'file_delete'
-  | 'code_execute' | 'http_request'
+  | 'file_read' | 'file_write' | 'file_delete' | 'str_replace'
+  | 'code_execute' | 'bash' | 'http_request'
   | 'web_search' | 'web_fetch'
   | 'browser_navigate' | 'browser_click' | 'browser_fill' | 'browser_screenshot'
-  | 'data_analyze'
+  | 'data_analyze' | 'chart_create'
   | 'image_generate' | 'spawn_agent'
   | 'create_presentation'
-  | 'stock_quote' | 'tts_generate';
+  | 'stock_quote' | 'tts_generate'
+  | 'ask_human' | 'terminate';
 export type ThinkingPhase = 'idle' | 'thinking' | 'planning' | 'executing' | 'reflecting';
 export type AgentMode = 'normal' | 'research' | 'background';
 

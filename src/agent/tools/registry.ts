@@ -89,7 +89,7 @@ export const TOOL_REGISTRY: ToolDefinition[] = [
     description: 'Spawn a specialized sub-agent to handle a specific subtask in parallel. The sub-agent has access to search, fetch, code execution, and file tools. Returns the sub-agent result when complete.',
     params: {
       task: { type: 'string', description: 'The specific task for the sub-agent to complete', required: true },
-      role: { type: 'string', description: 'Sub-agent specialization, e.g. "researcher", "coder", "analyst", "writer"', required: true },
+      role: { type: 'string', description: 'Sub-agent specialization: "researcher" | "coder" | "swe" | "analyst" | "data_analyst" | "browser_navigator" | "writer" | "designer" | "planner" | "reviewer" | "assistant"', required: true },
       context: { type: 'string', description: 'Additional context or constraints for the sub-agent' },
     },
   },
@@ -129,6 +129,50 @@ export const TOOL_REGISTRY: ToolDefinition[] = [
     description: 'Take a screenshot of the active browser page and save it to the sandbox. Returns the filename.',
     params: {
       fullPage: { type: 'boolean', description: 'Capture full scrollable page (default false)' },
+    },
+  },
+  {
+    name: 'bash',
+    description: 'Execute a shell command in the sandbox (bash). Use for git, find, grep, ls, curl, package management, build steps. Output is captured. Network and FS are unrestricted within sandbox; treat with care.',
+    params: {
+      command: { type: 'string', description: 'Shell command to run', required: true },
+      timeout: { type: 'number', description: 'Max execution time in seconds (default 60)' },
+      cwd: { type: 'string', description: 'Working directory (default sandbox root)' },
+    },
+  },
+  {
+    name: 'str_replace',
+    description: 'Precisely edit a sandbox file by replacing exact text. Fails if old_str is not unique or not found — preventing accidental edits. Preferred over file_write for surgical changes.',
+    params: {
+      path: { type: 'string', description: 'File path in sandbox', required: true },
+      old_str: { type: 'string', description: 'Exact substring to replace (must be unique in file)', required: true },
+      new_str: { type: 'string', description: 'Replacement text', required: true },
+    },
+  },
+  {
+    name: 'ask_human',
+    description: 'Pause execution and ask the user a clarifying question. Use ONLY when the request is genuinely ambiguous and cannot be reasonably inferred. Returns the user reply.',
+    params: {
+      question: { type: 'string', description: 'Concise question to ask the user', required: true },
+      options: { type: 'string', description: 'Optional JSON array of suggested answers' },
+    },
+  },
+  {
+    name: 'terminate',
+    description: 'Signal that the task is fully complete. Use as the final tool call after summarizing results. The loop exits cleanly after this.',
+    params: {
+      summary: { type: 'string', description: 'One-sentence summary of what was accomplished', required: true },
+      success: { type: 'boolean', description: 'Whether the task succeeded (default true)' },
+    },
+  },
+  {
+    name: 'chart_create',
+    description: 'Generate an interactive HTML chart (line, bar, pie, scatter) using Chart.js. Saves to sandbox. Pass JSON-encoded data.',
+    params: {
+      title: { type: 'string', description: 'Chart title', required: true },
+      type: { type: 'string', description: '"line" | "bar" | "pie" | "doughnut" | "scatter"', required: true },
+      labels: { type: 'string', description: 'JSON array of x-axis labels, e.g. ["Jan","Feb","Mar"]', required: true },
+      data: { type: 'string', description: 'JSON array of numbers OR JSON array of {label,data:[]} datasets for multi-series', required: true },
     },
   },
   {
