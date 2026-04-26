@@ -816,7 +816,10 @@ function BillingPage() {
                   <div className="text-xs text-[#7f7f7f]">Expires 12/27</div>
                 </div>
               </div>
-              <button className="w-full py-2 rounded-lg bg-[rgba(255,255,255,0.06)] text-xs text-[#acacac] hover:bg-[rgba(255,255,255,0.10)] transition-colors mb-2">Add new card</button>
+              <button
+                onClick={() => alert('Nexus runs locally on Ollama — no payment required. Connect API keys (Settings → API Keys) to use OpenAI/ElevenLabs/etc.')}
+                className="w-full py-2 rounded-lg bg-[rgba(255,255,255,0.06)] text-xs text-[#acacac] hover:bg-[rgba(255,255,255,0.10)] transition-colors mb-2"
+              >Add new card</button>
               <button onClick={() => setShowPaymentModal(false)} className="w-full py-2 rounded-lg bg-[rgba(255,255,255,0.04)] text-xs text-[#5f5f5f] hover:bg-[rgba(255,255,255,0.08)] transition-colors">Close</button>
             </motion.div>
           </motion.div>

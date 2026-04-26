@@ -157,6 +157,76 @@ textarea { resize: none; }
   color: #acacac;
 }
 
+/* ── Light mode (default — applied unless html.dark) ─────────────────────── */
+html:not(.dark) { color-scheme: light; }
+html:not(.dark) body { background: #f8f9fa; color: #1a1a1a; }
+
+/* Glass surfaces in light */
+html:not(.dark) .glass          { background: #ffffff; border-color: rgba(0,0,0,0.06); }
+html:not(.dark) .glass-elevated { background: #ffffff; border-color: rgba(0,0,0,0.08); box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 8px 24px rgba(0,0,0,0.06); }
+html:not(.dark) .glass-subtle   { background: #f1f3f5; border-color: rgba(0,0,0,0.05); }
+
+/* Scrollbar */
+html:not(.dark) ::-webkit-scrollbar-thumb       { background: rgba(0,0,0,0.18); }
+html:not(.dark) ::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.32); }
+
+/* Backgrounds — map dark hex to light equivalents */
+html:not(.dark) .bg-\[\#272728\] { background-color: #f8f9fa; }
+html:not(.dark) .bg-\[\#212122\] { background-color: #f1f3f5; }
+html:not(.dark) .bg-\[\#1e1e1f\] { background-color: #ffffff; }
+html:not(.dark) .bg-\[\#1a1a1c\] { background-color: #ffffff; }
+html:not(.dark) .bg-\[\#1a1a1f\] { background-color: #ffffff; }
+html:not(.dark) .bg-\[\#0f0f1a\] { background-color: #ffffff; }
+html:not(.dark) .bg-\[\#383739\] { background-color: #e9ecef; }
+html:not(.dark) .bg-\[\#252527\] { background-color: #f8f9fa; }
+html:not(.dark) .bg-\[\#161618\] { background-color: #eef0f2; }
+html:not(.dark) .bg-\[\#181819\] { background-color: #f1f3f5; }
+html:not(.dark) .bg-\[\#1f1f20\] { background-color: #ffffff; }
+html:not(.dark) .bg-\[\#1c1c1e\] { background-color: #ffffff; }
+html:not(.dark) .bg-\[\#202021\] { background-color: #f6f7f9; }
+html:not(.dark) .bg-\[\#2a2a2b\] { background-color: #eef0f2; }
+html:not(.dark) .border-\[\#2a2a2b\] { border-color: #d4d8dc; }
+
+/* Hover backgrounds */
+html:not(.dark) .hover\:bg-\[\#252527\]:hover { background-color: #eef0f2; }
+html:not(.dark) .hover\:bg-\[\#383739\]:hover { background-color: #dfe3e6; }
+
+/* Text colors */
+html:not(.dark) .text-\[\#dadada\] { color: #1a1a1a; }
+html:not(.dark) .text-\[\#acacac\] { color: #4a4a4a; }
+html:not(.dark) .text-\[\#7f7f7f\] { color: #5a5a5a; }
+html:not(.dark) .text-\[\#5f5f5f\] { color: #8a8a8a; }
+html:not(.dark) .placeholder\:text-\[\#5f5f5f\]::placeholder { color: #9a9a9a; }
+html:not(.dark) .placeholder\:text-\[\#7f7f7f\]::placeholder { color: #8a8a8a; }
+
+/* Translucent whites → translucent blacks */
+html:not(.dark) .bg-\[rgba\(255\,255\,255\,0\.04\)\] { background-color: rgba(0,0,0,0.04); }
+html:not(.dark) .bg-\[rgba\(255\,255\,255\,0\.06\)\] { background-color: rgba(0,0,0,0.05); }
+html:not(.dark) .bg-\[rgba\(255\,255\,255\,0\.08\)\] { background-color: rgba(0,0,0,0.06); }
+html:not(.dark) .bg-\[rgba\(255\,255\,255\,0\.10\)\] { background-color: rgba(0,0,0,0.08); }
+html:not(.dark) .bg-\[rgba\(255\,255\,255\,0\.12\)\] { background-color: rgba(0,0,0,0.10); }
+html:not(.dark) .bg-\[rgba\(255\,255\,255\,0\.15\)\] { background-color: rgba(0,0,0,0.12); }
+
+html:not(.dark) .hover\:bg-\[rgba\(255\,255\,255\,0\.04\)\]:hover { background-color: rgba(0,0,0,0.03); }
+html:not(.dark) .hover\:bg-\[rgba\(255\,255\,255\,0\.06\)\]:hover { background-color: rgba(0,0,0,0.05); }
+html:not(.dark) .hover\:bg-\[rgba\(255\,255\,255\,0\.08\)\]:hover { background-color: rgba(0,0,0,0.06); }
+html:not(.dark) .hover\:bg-\[rgba\(255\,255\,255\,0\.10\)\]:hover { background-color: rgba(0,0,0,0.08); }
+html:not(.dark) .hover\:bg-\[rgba\(255\,255\,255\,0\.12\)\]:hover { background-color: rgba(0,0,0,0.10); }
+html:not(.dark) .hover\:bg-\[rgba\(255\,255\,255\,0\.16\)\]:hover { background-color: rgba(0,0,0,0.12); }
+html:not(.dark) .hover\:bg-\[rgba\(255\,255\,255\,0\.18\)\]:hover { background-color: rgba(0,0,0,0.13); }
+
+html:not(.dark) .border-\[rgba\(255\,255\,255\,0\.05\)\] { border-color: rgba(0,0,0,0.06); }
+html:not(.dark) .border-\[rgba\(255\,255\,255\,0\.06\)\] { border-color: rgba(0,0,0,0.06); }
+html:not(.dark) .border-\[rgba\(255\,255\,255\,0\.08\)\] { border-color: rgba(0,0,0,0.08); }
+html:not(.dark) .border-\[rgba\(255\,255\,255\,0\.10\)\] { border-color: rgba(0,0,0,0.10); }
+html:not(.dark) .border-\[rgba\(255\,255\,255\,0\.12\)\] { border-color: rgba(0,0,0,0.12); }
+html:not(.dark) .border-\[rgba\(255\,255\,255\,0\.16\)\] { border-color: rgba(0,0,0,0.16); }
+html:not(.dark) .border-\[rgba\(255\,255\,255\,0\.20\)\] { border-color: rgba(0,0,0,0.20); }
+html:not(.dark) .hover\:border-\[rgba\(255\,255\,255\,0\.16\)\]:hover { border-color: rgba(0,0,0,0.16); }
+
+/* Streaming caret */
+html:not(.dark) ::selection { background: rgba(26,147,254,0.18); }
+
 /* Toggle switch (Manus style) */
 .manus-toggle {
   position: relative;

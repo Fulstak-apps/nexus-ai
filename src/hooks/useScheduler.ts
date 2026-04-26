@@ -10,7 +10,7 @@ import { useEffect } from 'react';
 import { useAgentStore } from '@/store/agent';
 
 export function useScheduler() {
-  const { scheduledTasks, updateScheduledTask, apiKeys } = useAgentStore();
+  const { updateScheduledTask } = useAgentStore();
 
   useEffect(() => {
     const run = async () => {

@@ -139,11 +139,27 @@ export function Sidebar() {
 
       {/* Bottom: referral + settings */}
       <div className="border-t border-[rgba(255,255,255,0.06)] p-2 space-y-0.5">
-        <button className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-[rgba(255,255,255,0.06)] transition-colors text-left">
+        <button
+          onClick={async () => {
+            const url = typeof window !== 'undefined' ? window.location.origin : '';
+            try {
+              type Nav = Navigator & { share?: (d: ShareData) => Promise<void> };
+              const nav = navigator as Nav;
+              if (nav.share) {
+                await nav.share({ title: 'Nexus AI', text: 'Try Nexus AI — autonomous local AI agent', url });
+                toast.success('Share dialog opened');
+              } else {
+                await navigator.clipboard.writeText(url);
+                toast.success('Link copied', url);
+              }
+            } catch { /* user cancelled */ }
+          }}
+          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-[rgba(255,255,255,0.06)] transition-colors text-left"
+        >
           <Gift className="w-4 h-4 text-[#1a93fe] shrink-0" />
           <div className="min-w-0">
             <div className="text-xs font-medium text-[#dadada] truncate">Share with a friend</div>
-            <div className="text-[10px] text-[#5f5f5f]">Get 500 credits each</div>
+            <div className="text-[10px] text-[#5f5f5f]">Copy link or use share sheet</div>
           </div>
         </button>
 

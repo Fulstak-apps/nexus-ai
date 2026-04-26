@@ -228,7 +228,7 @@ export const useAgentStore = create<AgentStore>()(
       activeSessionId: null,
       messagesBySession: {},
       messages: [],
-      theme: 'system',
+      theme: 'light',
 
       phase: 'idle',
       currentPlan: null,

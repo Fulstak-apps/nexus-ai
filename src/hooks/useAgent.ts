@@ -2,7 +2,7 @@
 
 import { useCallback } from 'react';
 import { useAgentStore } from '@/store/agent';
-import { Message, Plan, ThinkingPhase, ToolCall, SubAgent, BackgroundJob } from '@/types';
+import { Message, Plan, ThinkingPhase, SubAgent } from '@/types';
 import { toast } from '@/components/ui/Toast';
 
 function uuid(): string {

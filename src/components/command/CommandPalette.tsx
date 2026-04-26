@@ -225,7 +225,7 @@ export function CommandPalette() {
                 {filtered.length === 0 && (
                   <div className="py-8 text-center opacity-30">
                     <Search className="w-8 h-8 mx-auto mb-2" />
-                    <div className="text-sm">No results for "{query}"</div>
+                    <div className="text-sm">No results for &ldquo;{query}&rdquo;</div>
                   </div>
                 )}
               </div>
