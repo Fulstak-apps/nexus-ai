@@ -115,6 +115,9 @@ interface AgentStore {
   credits: number;
   modelLabel: string;
   selectedModelId: 'lite' | 'pro' | 'max';
+  // Cloud LLM routing
+  llmProvider: 'ollama' | 'openai' | 'anthropic' | 'gemini' | 'groq';
+  llmModel: string;          // explicit model id when llmProvider != 'ollama'
 
   // Agent ask-human prompt (when agent calls ask_human tool)
   pendingQuestion: { question: string; options?: string[] } | null;
@@ -163,6 +166,8 @@ interface AgentStore {
   apiKeys: {
     anthropic: string;
     openai: string;
+    gemini: string;
+    groq: string;
     elevenlabs: string;
     huggingface: string;
     tavily: string;
@@ -233,6 +238,7 @@ interface AgentStore {
   setApiKey: (key: keyof AgentStore['apiKeys'], value: string) => void;
   incrementUsage: (creditsUsed?: number) => void;
   setSelectedModel: (id: 'lite' | 'pro' | 'max') => void;
+  setLLM: (provider: AgentStore['llmProvider'], model: string) => void;
   setPendingQuestion: (q: { question: string; options?: string[] } | null) => void;
   recordTokenUsage: (input: number, output: number) => void;
   pushBrowserActivity: (item: BrowserActivityItem) => void;
@@ -272,6 +278,8 @@ export const useAgentStore = create<AgentStore>()(
       credits: 5000,
       modelLabel: 'Nexus 1.0',
       selectedModelId: 'pro' as const,
+      llmProvider: 'ollama' as const,
+      llmModel: 'gemma4:e4b',
 
       userProfile: { name: 'New User', email: 'user@example.com' },
 
@@ -345,6 +353,8 @@ export const useAgentStore = create<AgentStore>()(
       apiKeys: {
         anthropic: '',
         openai: '',
+        gemini: '',
+        groq: '',
         elevenlabs: '',
         huggingface: '',
         tavily: '',
@@ -590,6 +600,7 @@ export const useAgentStore = create<AgentStore>()(
       })),
 
       setSelectedModel: (id) => set({ selectedModelId: id }),
+      setLLM: (llmProvider, llmModel) => set({ llmProvider, llmModel }),
       setPendingQuestion: (q) => set({ pendingQuestion: q }),
 
       pushBrowserActivity: (item) => set(state => ({
@@ -676,6 +687,8 @@ export const useAgentStore = create<AgentStore>()(
         myComputerEnabled: state.myComputerEnabled,
         usageStats: state.usageStats,
         sessionTokens: state.sessionTokens,
+        llmProvider: state.llmProvider,
+        llmModel: state.llmModel,
         credits: state.credits,
         apiKeys: state.apiKeys,
       }),

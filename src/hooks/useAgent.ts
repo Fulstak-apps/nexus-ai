@@ -34,13 +34,18 @@ export function useAgent() {
     clearStreamingText();
     setPhase('thinking');
 
-    // Pull user-supplied keys from store (Settings → API Keys)
-    const k = useAgentStore.getState().apiKeys;
+    // Pull user-supplied keys + selected provider/model from store
+    const state = useAgentStore.getState();
+    const k = state.apiKeys;
     const authHeaders: Record<string, string> = {
       'Content-Type': 'application/json',
+      'x-llm-provider': state.llmProvider,
+      ...(state.llmModel ? { 'x-llm-model': state.llmModel } : {}),
       ...(k.anthropic   ? { 'x-anthropic-key':  k.anthropic }   : {}),
       ...(k.elevenlabs  ? { 'x-elevenlabs-key': k.elevenlabs }  : {}),
       ...(k.openai      ? { 'x-openai-key':     k.openai }      : {}),
+      ...(k.gemini      ? { 'x-gemini-key':     k.gemini }      : {}),
+      ...(k.groq        ? { 'x-groq-key':       k.groq }        : {}),
       ...(k.huggingface ? { 'x-hf-key':         k.huggingface } : {}),
       ...(k.tavily      ? { 'x-tavily-key':     k.tavily }      : {}),
       ...(k.notion      ? { 'x-notion-key':     k.notion }      : {}),

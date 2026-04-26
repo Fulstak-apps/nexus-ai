@@ -7,7 +7,7 @@ import OpenAI from 'openai';
 import { TOOL_REGISTRY } from '../tools/registry';
 import { executeTool } from '../tools/executor';
 import { ToolCall } from '@/types';
-import { getClient, FAST_MODEL, toOpenAITools } from '../core/anthropic';
+import { getClient, getModelFor, toOpenAITools } from '../core/anthropic';
 
 const ROLE_PROMPTS: Record<string, string> = {
   researcher: 'You are a research specialist. Use web_search and browser_navigate to find comprehensive, accurate information. Synthesize findings into clear summaries with sources.',
@@ -56,7 +56,7 @@ ${context ? `## Context\n${context}` : ''}
 
   while (iterations < 8) {
     const response = await client.chat.completions.create({
-      model: FAST_MODEL,
+      model: getModelFor('fast'),
       messages,
       tools,
       tool_choice: 'auto',

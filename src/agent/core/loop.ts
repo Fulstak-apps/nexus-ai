@@ -17,7 +17,7 @@ import { executeTool } from '../tools/executor';
 import { reflectOnStep, reflectOnSession } from '../reflection';
 import { addMemory, searchMemory, summarizeOldSessions, loadUserProfile } from '../memory/store';
 import { TOOL_REGISTRY } from '../tools/registry';
-import { getClient, CHAT_MODEL, toOpenAITools } from './anthropic';
+import { getClient, getModelFor, toOpenAITools } from './anthropic';
 
 // ─── Event Types ──────────────────────────────────────────────────────────────
 
@@ -206,7 +206,7 @@ export async function* runAgentLoop(
   }
 
   const client = getClient();
-  const model = modelOverride ?? CHAT_MODEL;
+  const model = modelOverride ?? getModelFor('chat');
   const tools = toOpenAITools(TOOL_REGISTRY);
 
   // Detect tool calling support on first attempt

@@ -26,17 +26,24 @@ export async function POST(req: NextRequest) {
     return new Response('Message required', { status: 400 });
   }
 
-  // User-supplied keys from API Keys settings page (forwarded as headers)
+  // User-supplied keys + provider routing from API Keys settings (forwarded as headers)
+  const provider = (req.headers.get('x-llm-provider') || 'ollama') as RequestContext['provider'];
+  const modelOverride = req.headers.get('x-llm-model') || undefined;
   const userKeys: RequestContext = {
     apiKey:        req.headers.get('x-anthropic-key')   || undefined,
+    anthropic:     req.headers.get('x-anthropic-key')   || undefined,
     elevenlabs:    req.headers.get('x-elevenlabs-key')  || undefined,
     openai:        req.headers.get('x-openai-key')      || undefined,
+    gemini:        req.headers.get('x-gemini-key')      || undefined,
+    groq:          req.headers.get('x-groq-key')        || undefined,
     huggingface:   req.headers.get('x-hf-key')          || undefined,
     tavily:        req.headers.get('x-tavily-key')      || undefined,
     notion:        req.headers.get('x-notion-key')      || undefined,
     slackBot:      req.headers.get('x-slack-key')       || undefined,
     telegramBot:   req.headers.get('x-telegram-key')    || undefined,
     githubToken:   req.headers.get('x-github-key')      || undefined,
+    provider,
+    modelOverride,
   };
 
   const encoder = new TextEncoder();

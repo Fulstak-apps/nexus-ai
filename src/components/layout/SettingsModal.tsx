@@ -1358,7 +1358,10 @@ const API_KEY_FIELDS: {
   required?: boolean;
   desc: string;
 }[] = [
-  { id: 'openai',       label: 'OpenAI (optional)',  placeholder: 'sk-…',      url: 'https://platform.openai.com/api-keys',         desc: 'Optional. Used for DALL·E if you prefer it over the free Pollinations fallback.' },
+  { id: 'openai',       label: 'OpenAI',             placeholder: 'sk-…',      url: 'https://platform.openai.com/api-keys',         desc: 'GPT-4o, GPT-4.1, o3, DALL·E, vision_analyze.' },
+  { id: 'anthropic',    label: 'Anthropic',          placeholder: 'sk-ant-…',  url: 'https://console.anthropic.com/settings/keys',  desc: 'Claude Sonnet/Opus/Haiku via OpenAI-compat endpoint.' },
+  { id: 'gemini',       label: 'Google Gemini',      placeholder: 'AIza…',     url: 'https://aistudio.google.com/apikey',           desc: 'Gemini 2.5 Pro / Flash via OpenAI-compat endpoint.' },
+  { id: 'groq',         label: 'Groq',               placeholder: 'gsk_…',     url: 'https://console.groq.com/keys',                desc: 'Ultra-fast Llama hosting (free tier).' },
   { id: 'huggingface',  label: 'HuggingFace',        placeholder: 'hf_…',      url: 'https://huggingface.co/settings/tokens',       desc: 'Optional. Free inference for image and embedding models.' },
   { id: 'tavily',       label: 'Tavily Search',      placeholder: 'tvly-…',    url: 'https://tavily.com',                           desc: 'Optional. Better web search than the DuckDuckGo fallback. Free tier available.' },
   { id: 'elevenlabs',   label: 'ElevenLabs',         placeholder: 'sk_…',      url: 'https://elevenlabs.io/app/settings/api-keys',  desc: 'Optional. Text-to-speech. Free tier available.' },
