@@ -16,6 +16,19 @@ export interface Skill {
   custom?: boolean;
 }
 
+export interface BrowserActivityItem {
+  id: string;
+  kind: 'search' | 'fetch' | 'navigate' | 'click' | 'fill' | 'screenshot';
+  url?: string;
+  query?: string;
+  title?: string;
+  status: 'pending' | 'success' | 'error';
+  screenshot?: string;     // sandbox filename (served via /api/preview/...)
+  error?: string;
+  startedAt: number;
+  completedAt?: number;
+}
+
 export interface Connector {
   id: string;
   name: string;
@@ -105,6 +118,10 @@ interface AgentStore {
 
   // Agent ask-human prompt (when agent calls ask_human tool)
   pendingQuestion: { question: string; options?: string[] } | null;
+
+  // Live browser activity log (mini-browser preview panel)
+  browserActivity: BrowserActivityItem[];
+  browserPanelOpen: boolean;
 
   // Mode & jobs
   agentMode: AgentMode;
@@ -218,6 +235,10 @@ interface AgentStore {
   setSelectedModel: (id: 'lite' | 'pro' | 'max') => void;
   setPendingQuestion: (q: { question: string; options?: string[] } | null) => void;
   recordTokenUsage: (input: number, output: number) => void;
+  pushBrowserActivity: (item: BrowserActivityItem) => void;
+  updateBrowserActivity: (id: string, updates: Partial<BrowserActivityItem>) => void;
+  clearBrowserActivity: () => void;
+  setBrowserPanelOpen: (open: boolean) => void;
   deleteAllData: () => void;
 }
 
@@ -238,6 +259,8 @@ export const useAgentStore = create<AgentStore>()(
       sidebarOpen: true,
 
       pendingQuestion: null,
+      browserActivity: [],
+      browserPanelOpen: false,
 
       agentMode: 'normal',
       jobs: [],
@@ -568,6 +591,16 @@ export const useAgentStore = create<AgentStore>()(
 
       setSelectedModel: (id) => set({ selectedModelId: id }),
       setPendingQuestion: (q) => set({ pendingQuestion: q }),
+
+      pushBrowserActivity: (item) => set(state => ({
+        browserActivity: [...state.browserActivity, item].slice(-30),
+        browserPanelOpen: true,
+      })),
+      updateBrowserActivity: (id, updates) => set(state => ({
+        browserActivity: state.browserActivity.map(a => a.id === id ? { ...a, ...updates } : a),
+      })),
+      clearBrowserActivity: () => set({ browserActivity: [], browserPanelOpen: false }),
+      setBrowserPanelOpen: (browserPanelOpen) => set({ browserPanelOpen }),
 
       recordTokenUsage: (input, output) => set(state => {
         const sid = state.activeSessionId;

@@ -174,6 +174,35 @@ export function useAgent() {
               setActiveAgents(event.data as SubAgent[]);
             } else if (event.type === 'orchestrator_agent_done') {
               upsertAgent(event.data as SubAgent);
+            } else if (event.type === 'tool_call') {
+              const call = event.call as { id: string; tool: string; params: Record<string, unknown>; startedAt: number };
+              const browserKinds: Record<string, 'navigate' | 'click' | 'fill' | 'screenshot' | 'fetch' | 'search'> = {
+                browser_navigate: 'navigate', browser_click: 'click', browser_fill: 'fill',
+                browser_screenshot: 'screenshot', web_fetch: 'fetch', web_search: 'search',
+              };
+              const kind = browserKinds[call.tool];
+              if (kind) {
+                useAgentStore.getState().pushBrowserActivity({
+                  id: call.id,
+                  kind,
+                  url: call.params.url ? String(call.params.url) : undefined,
+                  query: call.params.query ? String(call.params.query) : undefined,
+                  status: 'pending',
+                  startedAt: call.startedAt,
+                });
+              }
+            } else if (event.type === 'tool_result') {
+              const callId = String(event.callId ?? '');
+              const out = event.output as { url?: string; title?: string; screenshot?: string } | null;
+              const err = event.error as string | undefined;
+              useAgentStore.getState().updateBrowserActivity(callId, {
+                status: err ? 'error' : 'success',
+                error: err,
+                url: out?.url,
+                title: out?.title,
+                screenshot: out?.screenshot,
+                completedAt: Date.now(),
+              });
             } else if (event.type === 'usage') {
               const t = event.tokens as { input?: number; output?: number };
               useAgentStore.getState().recordTokenUsage(t?.input ?? 0, t?.output ?? 0);

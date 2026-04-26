@@ -82,6 +82,15 @@ export async function browserNavigate(url: string, extractMode: string): Promise
     return (body.innerText ?? '').replace(/\s+/g, ' ').trim().slice(0, 6000);
   });
 
+  // Auto-screenshot for the live mini-browser preview in the UI
+  let screenshot: string | undefined;
+  try {
+    await fs.mkdir(SANDBOX_ROOT, { recursive: true });
+    const filename = `nav_${Date.now()}.png`;
+    await p.screenshot({ path: path.join(SANDBOX_ROOT, filename), fullPage: false });
+    screenshot = filename;
+  } catch { /* screenshot is best-effort */ }
+
   return {
     url: p.url(),
     status: response?.status() ?? 0,
@@ -90,6 +99,7 @@ export async function browserNavigate(url: string, extractMode: string): Promise
     links,
     forms,
     text,
+    screenshot,
   };
 }
 
@@ -99,7 +109,16 @@ export async function browserClick(selector: string): Promise<unknown> {
   const sel = selector.startsWith('text=') ? `text=${selector.slice(5).replace(/^["']|["']$/g, '')}` : selector;
   await p.locator(sel).first().click({ timeout: 10_000 });
   await p.waitForLoadState('networkidle', { timeout: 5_000 }).catch(() => {});
-  return { clicked: selector, url: p.url(), title: await p.title() };
+
+  let screenshot: string | undefined;
+  try {
+    await fs.mkdir(SANDBOX_ROOT, { recursive: true });
+    const filename = `click_${Date.now()}.png`;
+    await p.screenshot({ path: path.join(SANDBOX_ROOT, filename), fullPage: false });
+    screenshot = filename;
+  } catch { /* best-effort */ }
+
+  return { clicked: selector, url: p.url(), title: await p.title(), screenshot };
 }
 
 export async function browserFill(selector: string, value: string): Promise<unknown> {

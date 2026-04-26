@@ -5,6 +5,7 @@ import { Sidebar } from '@/components/layout/Sidebar';
 import { ChatWorkspace } from '@/components/chat/ChatWorkspace';
 import { CommandPalette } from '@/components/command/CommandPalette';
 import { AskHumanModal } from '@/components/chat/AskHumanModal';
+import { BrowserActivityPanel } from '@/components/agent/BrowserActivityPanel';
 import { TopBar } from '@/components/layout/TopBar';
 import { SettingsModal } from '@/components/layout/SettingsModal';
 import { useAgentStore } from '@/store/agent';
@@ -56,6 +57,7 @@ export default function Home() {
       <CommandPalette />
       <SettingsModal />
       <AskHumanModal />
+      <BrowserActivityPanel />
     </div>
   );
 }
