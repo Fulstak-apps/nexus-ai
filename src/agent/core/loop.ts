@@ -376,7 +376,6 @@ export async function* runAgentLoop(
         }
 
         // Step bookkeeping
-        advanceStep(plan);
         if (plan) {
           const currentStep = plan.steps.find(s => s.status === 'executing');
           if (currentStep) {
@@ -567,6 +566,5 @@ function markStepsComplete(plan: Plan | null) {
   }
 }
 
-function advanceStep(_plan: Plan | null) { /* step tracking handled inline */ }
 
 // (helper removed — tool execution is inlined to prevent double-execution)

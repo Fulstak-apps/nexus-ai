@@ -3,7 +3,6 @@
  * Each sub-agent gets its own Ollama call with a specialized system prompt.
  */
 
-import { randomUUID } from 'crypto';
 import OpenAI from 'openai';
 import { TOOL_REGISTRY } from '../tools/registry';
 import { executeTool } from '../tools/executor';

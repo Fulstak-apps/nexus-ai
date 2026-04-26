@@ -9,7 +9,7 @@ import {
   Database, Globe, Monitor, Palette, Zap, Link2, Puzzle,
   Info, HelpCircle, ChevronRight, ExternalLink, Check, Copy,
   Plus, Trash2, Edit2, AlertTriangle, Loader2, KeyRound, Eye, EyeOff,
-  BookOpen, Play, Pause, RotateCw,
+  BookOpen, Play,
 } from 'lucide-react';
 import { Recipe } from '@/types';
 
@@ -213,6 +213,7 @@ function ConfirmDialog({
 
 // ─── OAuth connect modal ─────────────────────────────────────────────────────
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function OAuthModal({
   connector, onSuccess, onCancel,
 }: {
@@ -1124,11 +1125,11 @@ function RecipesPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2 flex-wrap">
         <h2 className="text-base font-semibold text-[#dadada]">Recipes</h2>
         <button
           onClick={() => setCreating(true)}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#1a93fe] hover:bg-[#1080e8] text-white text-sm font-medium"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#1a93fe] hover:bg-[#1080e8] text-white text-sm font-medium shrink-0"
         >
           <Plus className="w-3.5 h-3.5" /> New recipe
         </button>
@@ -1722,17 +1723,36 @@ export function SettingsModal() {
             className="fixed inset-0 bg-black/60 z-50"
             onClick={closeSettings}
           />
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-6 pointer-events-none">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-6 pointer-events-none">
             <motion.div
               initial={{ opacity: 0, scale: 0.96, y: 8 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.96, y: 8 }}
               transition={{ type: 'spring', stiffness: 400, damping: 35 }}
-              className="relative w-full max-w-3xl h-[580px] bg-[#1e1e1f] border border-[rgba(255,255,255,0.10)] rounded-2xl shadow-[0_24px_80px_rgba(0,0,0,0.8)] overflow-hidden flex pointer-events-auto"
+              className="relative w-full max-w-3xl h-[92vh] sm:h-[580px] bg-[#1e1e1f] border border-[rgba(255,255,255,0.10)] rounded-2xl shadow-[0_24px_80px_rgba(0,0,0,0.4)] overflow-hidden flex flex-col sm:flex-row pointer-events-auto"
               onClick={e => e.stopPropagation()}
             >
-              {/* Left nav */}
-              <div className="w-52 shrink-0 bg-[#181819] border-r border-[rgba(255,255,255,0.06)] flex flex-col py-3 overflow-y-auto">
+              {/* Mobile horizontal scroll tabs (under 640px) */}
+              <div className="sm:hidden shrink-0 flex overflow-x-auto bg-[#181819] border-b border-[rgba(255,255,255,0.06)] px-2 py-1.5 gap-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                {NAV_ITEMS.map(({ page, icon: Icon, label }) => (
+                  <button
+                    key={page}
+                    onClick={() => setSettingsPage(page)}
+                    className={cn(
+                      'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs whitespace-nowrap shrink-0 transition-colors',
+                      settingsPage === page
+                        ? 'bg-[rgba(255,255,255,0.08)] text-[#dadada]'
+                        : 'text-[#acacac] hover:bg-[rgba(255,255,255,0.04)] hover:text-[#dadada]',
+                    )}
+                  >
+                    <Icon className="w-3.5 h-3.5 shrink-0" />
+                    {label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Desktop left nav (640px+) */}
+              <div className="hidden sm:flex w-52 shrink-0 bg-[#181819] border-r border-[rgba(255,255,255,0.06)] flex-col py-3 overflow-y-auto">
                 {NAV_ITEMS.map(({ page, icon: Icon, label }) => (
                   <button
                     key={page}
@@ -1751,14 +1771,15 @@ export function SettingsModal() {
               </div>
 
               {/* Content */}
-              <div className="flex-1 overflow-y-auto p-6">
+              <div className="flex-1 min-w-0 overflow-y-auto p-4 sm:p-6 pr-12 sm:pr-6">
                 <PageContent page={settingsPage} />
               </div>
 
               {/* Close */}
               <button
                 onClick={closeSettings}
-                className="absolute top-3 right-3 w-7 h-7 rounded-lg bg-[rgba(255,255,255,0.06)] flex items-center justify-center hover:bg-[rgba(255,255,255,0.10)] transition-colors"
+                className="absolute top-3 right-3 w-7 h-7 rounded-lg bg-[rgba(255,255,255,0.06)] flex items-center justify-center hover:bg-[rgba(255,255,255,0.10)] transition-colors z-10"
+                aria-label="Close settings"
               >
                 <X className="w-4 h-4 text-[#acacac]" />
               </button>

@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { Message, ToolCall } from '@/types';
 import { GlassPanel } from '@/components/ui/GlassPanel';
 import { cn, formatTime } from '@/lib/utils';
-import { ChevronDown, ChevronRight, Wrench, User, Brain, Terminal } from 'lucide-react';
+import { ChevronDown, ChevronRight, User, Brain, Terminal } from 'lucide-react';
 
 interface MessageBubbleProps {
   message: Message;

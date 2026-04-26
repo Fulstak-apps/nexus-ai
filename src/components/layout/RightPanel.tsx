@@ -9,9 +9,9 @@ import {
   Brain, Database, FileText, Cpu, Settings,
   CheckCircle2, Circle, AlertCircle, Loader2,
   Trash2, RefreshCw, Download, Upload, Search, Moon, Sun, Monitor,
-  Briefcase, Users, Play, XCircle, Clock,
+  Briefcase, Users, XCircle, Clock,
 } from 'lucide-react';
-import { BackgroundJob, SubAgent } from '@/types';
+import { BackgroundJob } from '@/types';
 
 const TABS = [
   { id: 'reasoning' as const, label: 'Plan', icon: Brain },
@@ -137,7 +137,7 @@ export function RightPanel() {
 // ─── Agents Tab ───────────────────────────────────────────────────────────────
 
 function AgentsTab() {
-  const { activeAgents, researchPhase, phase } = useAgentStore();
+  const { activeAgents, researchPhase } = useAgentStore();
 
   const statusColor: Record<string, string> = {
     pending: 'text-gray-400',
@@ -227,6 +227,8 @@ function JobsTab() {
     load();
     const i = setInterval(load, 3000);
     return () => clearInterval(i);
+    // load is stable for the component lifetime
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const deleteJob = async (id: string) => {
@@ -350,6 +352,7 @@ function MemoryTab() {
     }
   };
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(); }, []);
 
   const typeColor = (t: string) =>

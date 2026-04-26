@@ -16,7 +16,7 @@ export function useAgent() {
     messages, addMessage, setPhase, setCurrentPlan,
     setIsStreaming, appendStreamToken, clearStreamingText,
     updatePlanStep, isStreaming, agentMode,
-    upsertAgent, setActiveAgents, setResearchPhase, upsertJob,
+    upsertAgent, setActiveAgents, setResearchPhase,
     incrementUsage, selectedModelId,
   } = useAgentStore();
 
@@ -208,7 +208,7 @@ export function useAgent() {
     }
   }, [messages, isStreaming, agentMode, addMessage, setPhase, setCurrentPlan, setIsStreaming,
       appendStreamToken, clearStreamingText, updatePlanStep, upsertAgent, setActiveAgents,
-      setResearchPhase, upsertJob]);
+      setResearchPhase, incrementUsage, selectedModelId]);
 
   return { sendMessage, isStreaming };
 }

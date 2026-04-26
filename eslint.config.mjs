@@ -8,7 +8,7 @@ const eslintConfig = defineConfig([
   {
     rules: {
       // Polling effects + lazy capability detection legitimately call setState in effects.
-      'react-hooks/set-state-in-effect': 'warn',
+      'react-hooks/set-state-in-effect': 'off',
     },
   },
   // Override default ignores of eslint-config-next.
