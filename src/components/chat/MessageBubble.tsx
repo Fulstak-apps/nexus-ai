@@ -6,6 +6,8 @@ import { Message, ToolCall } from '@/types';
 import { GlassPanel } from '@/components/ui/GlassPanel';
 import { cn, formatTime } from '@/lib/utils';
 import { ChevronDown, ChevronRight, User, Brain, Terminal } from 'lucide-react';
+import { MarkdownBody } from './MarkdownBody';
+import { MessageActions } from './MessageActions';
 
 interface MessageBubbleProps {
   message: Message;
@@ -75,7 +77,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
       initial={{ opacity: 0, y: 16, scale: 0.97 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={{ type: 'spring', stiffness: 400, damping: 35 }}
-      className={cn('flex gap-3', isUser ? 'flex-row-reverse' : 'flex-row')}
+      className={cn('flex gap-3 group', isUser ? 'flex-row-reverse' : 'flex-row')}
     >
       {/* Avatar */}
       <div className={cn(
@@ -108,14 +110,18 @@ export function MessageBubble({ message }: MessageBubbleProps) {
             </div>
           )}
 
-          {/* Message text */}
-          <div className="text-sm leading-relaxed whitespace-pre-wrap">
-            {message.content}
-          </div>
+          {/* Message text — markdown for assistant, plain for user */}
+          {isUser
+            ? <div className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</div>
+            : <MarkdownBody>{message.content}</MarkdownBody>
+          }
 
           {/* Reasoning */}
           {message.reasoning && <ReasoningSection reasoning={message.reasoning} />}
         </GlassPanel>
+
+        {/* Action toolbar */}
+        <MessageActions message={message} />
 
         {/* Timestamp */}
         <div className={cn('text-[10px] opacity-30 px-1', isUser ? 'text-right' : 'text-left')}>
@@ -137,8 +143,8 @@ export function StreamingBubble({ text }: { text: string }) {
         <Brain className="w-3.5 h-3.5 text-white animate-pulse" />
       </div>
       <GlassPanel className="max-w-[75%] px-4 py-3">
-        <div className="text-sm leading-relaxed whitespace-pre-wrap">
-          {text}
+        <div className="text-sm leading-relaxed">
+          <MarkdownBody>{text}</MarkdownBody>
           <motion.span
             animate={{ opacity: [1, 0] }}
             transition={{ duration: 0.6, repeat: Infinity }}

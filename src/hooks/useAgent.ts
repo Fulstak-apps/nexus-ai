@@ -198,7 +198,7 @@ export function useAgent() {
               }
             } else if (event.type === 'tool_result') {
               const callId = String(event.callId ?? '');
-              const out = event.output as { url?: string; title?: string; screenshot?: string } | null;
+              const out = event.output as { url?: string; title?: string; screenshot?: string; _compression?: { tokensSaved?: number } } | null;
               const err = event.error as string | undefined;
               useAgentStore.getState().updateBrowserActivity(callId, {
                 status: err ? 'error' : 'success',
@@ -208,6 +208,10 @@ export function useAgent() {
                 screenshot: out?.screenshot,
                 completedAt: Date.now(),
               });
+              const saved = out?._compression?.tokensSaved;
+              if (typeof saved === 'number' && saved > 0) {
+                useAgentStore.getState().recordTokensSaved(saved);
+              }
             } else if (event.type === 'usage') {
               const t = event.tokens as { input?: number; output?: number };
               useAgentStore.getState().recordTokenUsage(t?.input ?? 0, t?.output ?? 0);

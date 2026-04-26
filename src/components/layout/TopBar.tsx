@@ -157,7 +157,7 @@ export function TopBar() {
         <button
           onClick={() => openSettings('usage')}
           className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg hover:bg-[rgba(255,255,255,0.06)] transition-colors"
-          title={`${usageStats.tokensIn ?? 0} in · ${usageStats.tokensOut ?? 0} out`}
+          title={`Tokens — in: ${usageStats.tokensIn ?? 0} · out: ${usageStats.tokensOut ?? 0} · saved: ${usageStats.tokensSaved ?? 0}`}
         >
           <Zap className="w-3.5 h-3.5 text-[#1a93fe]" />
           <span className="text-sm font-medium text-[#dadada]">{remaining.toLocaleString()}</span>

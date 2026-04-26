@@ -133,11 +133,12 @@ export const TOOL_REGISTRY: ToolDefinition[] = [
   },
   {
     name: 'bash',
-    description: 'Execute a shell command in the sandbox (bash). Use for git, find, grep, ls, curl, package management, build steps. Output is captured. Network and FS are unrestricted within sandbox; treat with care.',
+    description: 'Execute a shell command in the sandbox (bash). Output is auto-compressed for common dev commands (git/ls/grep/cat/test runners) — saves 60-90% tokens vs raw. Set raw=true to opt out.',
     params: {
       command: { type: 'string', description: 'Shell command to run', required: true },
       timeout: { type: 'number', description: 'Max execution time in seconds (default 60)' },
       cwd: { type: 'string', description: 'Working directory (default sandbox root)' },
+      raw: { type: 'boolean', description: 'If true, skip output compression and return raw stdout (default false)' },
     },
   },
   {

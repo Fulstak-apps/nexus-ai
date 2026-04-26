@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
 import {
   Plus, Search, BookOpen, Clock,
   MessageSquare, Trash2, Gift,
-  Bot, Settings, Download,
+  Bot, Settings, Download, Pin, Folder, MoreHorizontal,
 } from 'lucide-react';
 import { exportCurrentSession } from '@/lib/exportSession';
 import { toast } from '@/components/ui/Toast';
@@ -17,14 +17,99 @@ export function Sidebar() {
   const {
     sessions, activeSessionId,
     setActiveSession, newSession, deleteSession,
-    openSettings,
+    openSettings, setSessionFolder, toggleSessionPin,
   } = useAgentStore();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearch, setShowSearch] = useState(false);
+  const [openMenu, setOpenMenu] = useState<string | null>(null);
 
   const filteredSessions = sessions.filter(s =>
     !searchQuery || s.title.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  // Group sessions: pinned first, then by folder, then untagged
+  const pinned = filteredSessions.filter(s => s.pinned);
+  const unpinned = filteredSessions.filter(s => !s.pinned);
+  const byFolder = new Map<string, typeof unpinned>();
+  const noFolder: typeof unpinned = [];
+  for (const s of unpinned) {
+    if (s.folder) {
+      const arr = byFolder.get(s.folder) ?? [];
+      arr.push(s);
+      byFolder.set(s.folder, arr);
+    } else {
+      noFolder.push(s);
+    }
+  }
+
+  const promptFolder = (id: string, currentFolder?: string) => {
+    const folder = prompt('Folder name (empty = remove from folder)', currentFolder ?? '')?.trim();
+    if (folder === undefined) return;
+    setSessionFolder(id, folder || undefined);
+    setOpenMenu(null);
+  };
+
+  const renderSessionRow = (session: typeof unpinned[number]) => (
+    <div
+      key={session.id}
+      className={cn(
+        'group flex items-center gap-2 px-3 py-1.5 rounded-lg cursor-pointer transition-colors relative',
+        activeSessionId === session.id
+          ? 'bg-[rgba(255,255,255,0.08)] text-[#dadada]'
+          : 'hover:bg-[rgba(255,255,255,0.04)] text-[#acacac]',
+      )}
+      onClick={() => setActiveSession(session.id)}
+    >
+      {session.pinned
+        ? <Pin className="w-3 h-3 shrink-0 text-amber-500 fill-current" />
+        : <MessageSquare className="w-3.5 h-3.5 shrink-0 opacity-50" />
+      }
+      <span className="text-xs flex-1 truncate">{session.title}</span>
+      <div className="opacity-0 group-hover:opacity-100 flex items-center gap-0.5 transition-opacity">
+        <button
+          onClick={e => { e.stopPropagation(); setOpenMenu(openMenu === session.id ? null : session.id); }}
+          title="More"
+          className="p-0.5 rounded hover:bg-white/10"
+        >
+          <MoreHorizontal className="w-3 h-3" />
+        </button>
+        <button
+          onClick={e => {
+            e.stopPropagation();
+            const msgs = useAgentStore.getState().messagesBySession[session.id] ?? [];
+            const ok = exportCurrentSession(session, msgs);
+            if (ok) toast.success('Exported', `${msgs.length} messages saved`);
+            else toast.warn('Empty session', 'Nothing to export');
+          }}
+          title="Export"
+          className="p-0.5 rounded hover:text-sky-400"
+        >
+          <Download className="w-3 h-3" />
+        </button>
+      </div>
+      {openMenu === session.id && (
+        <div
+          onClick={e => e.stopPropagation()}
+          className="absolute right-1 top-7 z-50 w-40 rounded-lg bg-[#383739] border border-white/10 shadow-xl py-1"
+        >
+          <button onClick={() => { toggleSessionPin(session.id); setOpenMenu(null); }} className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-[#dadada] hover:bg-white/5 text-left">
+            <Pin className="w-3 h-3" /> {session.pinned ? 'Unpin' : 'Pin to top'}
+          </button>
+          <button onClick={() => promptFolder(session.id, session.folder)} className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-[#dadada] hover:bg-white/5 text-left">
+            <Folder className="w-3 h-3" /> Move to folder…
+          </button>
+          {sessions.length > 1 && (
+            <button
+              onClick={() => { if (confirm('Delete?')) deleteSession(session.id); setOpenMenu(null); }}
+              className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-red-400 hover:bg-red-500/10 text-left"
+            >
+              <Trash2 className="w-3 h-3" /> Delete
+            </button>
+          )}
+        </div>
+      )}
+    </div>
   );
 
   return (
@@ -99,42 +184,27 @@ export function Sidebar() {
           <p className="px-3 py-2 text-xs text-[#5f5f5f]">No tasks yet</p>
         )}
 
-        {filteredSessions.map(session => (
-          <div
-            key={session.id}
-            className={cn(
-              'group flex items-center gap-2 px-3 py-1.5 rounded-lg cursor-pointer transition-colors',
-              activeSessionId === session.id
-                ? 'bg-[rgba(255,255,255,0.08)] text-[#dadada]'
-                : 'hover:bg-[rgba(255,255,255,0.04)] text-[#acacac]',
-            )}
-            onClick={() => setActiveSession(session.id)}
-          >
-            <MessageSquare className="w-3.5 h-3.5 shrink-0 opacity-50" />
-            <span className="text-xs flex-1 truncate">{session.title}</span>
-            <button
-              onClick={e => {
-                e.stopPropagation();
-                const msgs = useAgentStore.getState().messagesBySession[session.id] ?? [];
-                const ok = exportCurrentSession(session, msgs);
-                if (ok) toast.success('Exported', `${msgs.length} messages saved`);
-                else toast.warn('Empty session', 'Nothing to export');
-              }}
-              title="Export as Markdown"
-              className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:text-sky-400 transition-opacity"
-            >
-              <Download className="w-3 h-3" />
-            </button>
-            {sessions.length > 1 && (
-              <button
-                onClick={e => { e.stopPropagation(); if (confirm('Delete?')) deleteSession(session.id); }}
-                className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:text-red-400 transition-opacity"
-              >
-                <Trash2 className="w-3 h-3" />
-              </button>
-            )}
+        {pinned.length > 0 && (
+          <div className="mb-1">
+            <div className="flex items-center gap-1 px-3 py-1">
+              <Pin className="w-3 h-3 text-amber-500" />
+              <span className="text-[10px] font-semibold text-[#5f5f5f] uppercase tracking-wider">Pinned</span>
+            </div>
+            {pinned.map(renderSessionRow)}
+          </div>
+        )}
+
+        {[...byFolder.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([folder, items]) => (
+          <div key={folder} className="mb-1">
+            <div className="flex items-center gap-1 px-3 py-1">
+              <Folder className="w-3 h-3 text-sky-500" />
+              <span className="text-[10px] font-semibold text-[#5f5f5f] uppercase tracking-wider truncate">{folder}</span>
+            </div>
+            {items.map(renderSessionRow)}
           </div>
         ))}
+
+        {noFolder.map(renderSessionRow)}
       </div>
 
       {/* Bottom: referral + settings */}

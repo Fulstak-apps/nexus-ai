@@ -139,6 +139,9 @@ export interface Session {
   updatedAt: number;
   messageCount: number;
   lastMessage?: string;
+  folder?: string;        // Folder name (e.g. "Work", "Research")
+  tags?: string[];
+  pinned?: boolean;
 }
 
 // ─── Background Jobs ──────────────────────────────────────────────────────────

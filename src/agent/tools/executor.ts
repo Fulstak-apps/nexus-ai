@@ -767,29 +767,46 @@ async function handleBash(params: Record<string, unknown>): Promise<unknown> {
   const command = String(params.command);
   const timeout = Number(params.timeout ?? 60) * 1000;
   const cwd = params.cwd ? sandboxPath(String(params.cwd)) : SANDBOX_ROOT;
+  const raw = params.raw === true; // opt-out of compression
   await ensureSandbox();
 
   // Block obviously destructive commands by default
   const banned = /\brm\s+-rf\s+\/(?!\S*\.nexus-sandbox)|:\(\)\s*\{\s*:\|:&\s*\}|>\s*\/dev\/sd[a-z]/i;
   if (banned.test(command)) throw new Error('Refused: command pattern blocked');
 
+  const { compressBashOutput } = await import('./output-filter');
+
+  const summarize = (stdout: string, stderr: string, exitCode: number, timedOut?: boolean) => {
+    if (raw) {
+      return { stdout: stdout.slice(0, 16000), stderr: stderr.slice(0, 4000), exitCode, timedOut, command };
+    }
+    const compressed = compressBashOutput(stdout, command);
+    return {
+      stdout: compressed.text,
+      stderr: stderr.slice(0, 2000),
+      exitCode,
+      timedOut,
+      command,
+      _compression: {
+        strategy: compressed.strategy,
+        originalChars: compressed.originalChars,
+        compressedChars: compressed.compressedChars,
+        tokensSaved: compressed.tokensSaved,
+      },
+    };
+  };
+
   try {
     const { stdout, stderr } = await execAsync(command, {
       timeout,
       cwd,
-      maxBuffer: 4 * 1024 * 1024,
+      maxBuffer: 8 * 1024 * 1024,
       shell: '/bin/bash',
     });
-    return { stdout: stdout.slice(0, 8000), stderr: stderr.slice(0, 4000), exitCode: 0, command };
+    return summarize(stdout, stderr, 0);
   } catch (err) {
     const e = err as { stdout?: string; stderr?: string; code?: number; killed?: boolean; message?: string };
-    return {
-      stdout: (e.stdout ?? '').slice(0, 8000),
-      stderr: (e.stderr ?? e.message ?? '').slice(0, 4000),
-      exitCode: e.code ?? 1,
-      timedOut: !!e.killed,
-      command,
-    };
+    return summarize(e.stdout ?? '', e.stderr ?? e.message ?? '', e.code ?? 1, !!e.killed);
   }
 }
 

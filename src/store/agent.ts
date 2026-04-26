@@ -178,7 +178,7 @@ interface AgentStore {
   };
 
   // Usage stats
-  usageStats: { creditsUsed: number; creditsTotal: number; tasksRun: number; hoursSaved: number; tokensIn: number; tokensOut: number };
+  usageStats: { creditsUsed: number; creditsTotal: number; tasksRun: number; hoursSaved: number; tokensIn: number; tokensOut: number; tokensSaved: number };
   // Per-session token totals
   sessionTokens: Record<string, { input: number; output: number; total: number }>;
 
@@ -196,6 +196,8 @@ interface AgentStore {
   setActiveSession: (id: string) => void;
   deleteSession: (id: string) => void;
   renameSession: (id: string, title: string) => void;
+  setSessionFolder: (id: string, folder: string | undefined) => void;
+  toggleSessionPin: (id: string) => void;
   updatePlanStep: (stepId: string, updates: Partial<Plan['steps'][0]>) => void;
   resetAll: () => void;
   setAgentMode: (mode: AgentMode) => void;
@@ -241,6 +243,7 @@ interface AgentStore {
   setLLM: (provider: AgentStore['llmProvider'], model: string) => void;
   setPendingQuestion: (q: { question: string; options?: string[] } | null) => void;
   recordTokenUsage: (input: number, output: number) => void;
+  recordTokensSaved: (amount: number) => void;
   pushBrowserActivity: (item: BrowserActivityItem) => void;
   updateBrowserActivity: (id: string, updates: Partial<BrowserActivityItem>) => void;
   clearBrowserActivity: () => void;
@@ -371,6 +374,7 @@ export const useAgentStore = create<AgentStore>()(
         hoursSaved: 0,
         tokensIn: 0,
         tokensOut: 0,
+        tokensSaved: 0,
       },
       sessionTokens: {},
 
@@ -480,6 +484,14 @@ export const useAgentStore = create<AgentStore>()(
 
       renameSession: (id, title) => set(state => ({
         sessions: state.sessions.map(s => s.id === id ? { ...s, title } : s),
+      })),
+
+      setSessionFolder: (id, folder) => set(state => ({
+        sessions: state.sessions.map(s => s.id === id ? { ...s, folder } : s),
+      })),
+
+      toggleSessionPin: (id) => set(state => ({
+        sessions: state.sessions.map(s => s.id === id ? { ...s, pinned: !s.pinned } : s),
       })),
 
       updatePlanStep: (stepId, updates) => set(state => {
@@ -613,6 +625,10 @@ export const useAgentStore = create<AgentStore>()(
       clearBrowserActivity: () => set({ browserActivity: [], browserPanelOpen: false }),
       setBrowserPanelOpen: (browserPanelOpen) => set({ browserPanelOpen }),
 
+      recordTokensSaved: (amount) => set(state => ({
+        usageStats: { ...state.usageStats, tokensSaved: state.usageStats.tokensSaved + Math.max(0, amount) },
+      })),
+
       recordTokenUsage: (input, output) => set(state => {
         const sid = state.activeSessionId;
         const newSessionTokens = sid
@@ -658,7 +674,7 @@ export const useAgentStore = create<AgentStore>()(
         researchPhase: null,
         scheduledTasks: [],
         personalization: { aboutYou: '', customInstructions: '' },
-        usageStats: { creditsUsed: 0, creditsTotal: 5000, tasksRun: 0, hoursSaved: 0, tokensIn: 0, tokensOut: 0 },
+        usageStats: { creditsUsed: 0, creditsTotal: 5000, tasksRun: 0, hoursSaved: 0, tokensIn: 0, tokensOut: 0, tokensSaved: 0 },
         sessionTokens: {},
       }),
     }),
