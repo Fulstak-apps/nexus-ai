@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect, KeyboardEvent } from 'react';
+import { useState, useRef, useEffect, type KeyboardEvent } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Send, Zap, Paperclip, Mic, MicOff, Search, Clock, ChevronDown, Globe, Mail, FolderOpen } from 'lucide-react';
@@ -59,7 +59,7 @@ export function FloatingInput({ onSend, disabled, placeholder }: FloatingInputPr
   const baseValueRef = useRef('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const { agentMode, setAgentMode, connectors, openSettings } = useAgentStore();
+  const { agentMode, setAgentMode, connectors, openSettings, recipes, newSession, resetAll, sessions, activeSessionId, messagesBySession, setSettingsPage } = useAgentStore();
   const visibleConnectors = connectors.slice(0, 6);
   const ModeIcon = MODE_ICONS[agentMode];
   const modeColor = MODE_COLORS[agentMode];
@@ -73,11 +73,77 @@ export function FloatingInput({ onSend, disabled, placeholder }: FloatingInputPr
   function handleSend() {
     const trimmed = value.trim();
     if (!trimmed || disabled) return;
+
+    // ── Slash commands ────────────────────────────────────────────────
+    if (trimmed.startsWith('/')) {
+      const [cmd, ...rest] = trimmed.slice(1).split(/\s+/);
+      const arg = rest.join(' ').trim();
+      const handled = runSlashCommand(cmd.toLowerCase(), arg);
+      if (handled) {
+        setValue('');
+        if (textareaRef.current) textareaRef.current.style.height = 'auto';
+        return;
+      }
+    }
+
     const final = uploadedName ? `${trimmed}\n\n[Attached: ${uploadedName}]` : trimmed;
     onSend(final);
     setValue('');
     setUploadedName(null);
     if (textareaRef.current) textareaRef.current.style.height = 'auto';
+  }
+
+  function runSlashCommand(cmd: string, arg: string): boolean {
+    switch (cmd) {
+      case 'help':
+      case '?':
+        window.dispatchEvent(new KeyboardEvent('keydown', { key: '/', metaKey: true, bubbles: true }));
+        return true;
+      case 'shortcuts':
+        window.dispatchEvent(new KeyboardEvent('keydown', { key: '/', metaKey: true, bubbles: true }));
+        return true;
+      case 'new':
+        newSession();
+        return true;
+      case 'clear': {
+        if (confirm('Clear ALL sessions and data? This cannot be undone.')) resetAll();
+        return true;
+      }
+      case 'export': {
+        const session = sessions.find(s => s.id === activeSessionId);
+        const msgs = activeSessionId ? messagesBySession[activeSessionId] ?? [] : [];
+        if (!session || msgs.length === 0) return true;
+        // Use dynamic import to avoid SSR issues
+        import('@/lib/exportSession').then(m => m.exportCurrentSession(session, msgs));
+        return true;
+      }
+      case 'settings':
+        openSettings();
+        return true;
+      case 'recipes':
+        setSettingsPage('recipes');
+        openSettings('recipes');
+        return true;
+      case 'recipe': {
+        // /recipe <name-or-fragment>
+        const r = recipes.find(x =>
+          x.name.toLowerCase().includes(arg.toLowerCase()) ||
+          x.id.toLowerCase().includes(arg.toLowerCase()),
+        );
+        if (!r) {
+          alert(`No recipe matching "${arg}". Available:\n${recipes.map(x => `  /${x.name}`).join('\n')}`);
+          return true;
+        }
+        let filled = r.prompt;
+        if (r.variables) {
+          for (const [k, v] of Object.entries(r.variables)) filled = filled.replaceAll(`{{${k}}}`, v);
+        }
+        onSend(filled);
+        return true;
+      }
+      default:
+        return false;
+    }
   }
 
   function handleKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {

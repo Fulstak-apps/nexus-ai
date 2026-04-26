@@ -26,6 +26,16 @@ export function ChatWorkspace() {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, streamingText]);
 
+  // Listen for recipe run events (dispatched from settings)
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const ce = e as CustomEvent<{ prompt: string }>;
+      if (ce.detail?.prompt) sendMessage(ce.detail.prompt);
+    };
+    window.addEventListener('nexus:run-recipe', handler);
+    return () => window.removeEventListener('nexus:run-recipe', handler);
+  }, [sendMessage]);
+
   const isEmpty = messages.length === 0 && !isStreaming;
 
   return (

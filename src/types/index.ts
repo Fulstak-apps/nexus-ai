@@ -27,6 +27,8 @@ export interface Message {
   toolResults?: ToolResult[];
   reasoning?: string;
   planSnapshot?: Plan;
+  tokens?: { input: number; output: number; total: number };
+  durationMs?: number;
 }
 
 // ─── Tools ────────────────────────────────────────────────────────────────────
@@ -197,6 +199,28 @@ export interface MultiAgentRun {
   synthesis?: string;
   status: 'running' | 'completed' | 'failed';
   createdAt: number;
+}
+
+export interface Recipe {
+  id: string;
+  name: string;
+  description: string;
+  prompt: string;                    // The prompt template (supports {{variables}})
+  variables?: Record<string, string>; // Default variable values
+  enabledSkills?: string[];          // Skill IDs to enable for this recipe
+  preferredModel?: 'lite' | 'pro' | 'max';
+  preferredMode?: AgentMode;
+  tags?: string[];
+  icon?: string;
+  createdAt: number;
+  updatedAt: number;
+  runCount: number;
+}
+
+export interface TokenUsage {
+  input: number;
+  output: number;
+  total: number;
 }
 
 export interface ScheduledTask {

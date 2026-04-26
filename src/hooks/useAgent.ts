@@ -174,6 +174,9 @@ export function useAgent() {
               setActiveAgents(event.data as SubAgent[]);
             } else if (event.type === 'orchestrator_agent_done') {
               upsertAgent(event.data as SubAgent);
+            } else if (event.type === 'usage') {
+              const t = event.tokens as { input?: number; output?: number };
+              useAgentStore.getState().recordTokenUsage(t?.input ?? 0, t?.output ?? 0);
             } else if (event.type === 'ask_human') {
               const question = String(event.question ?? '');
               const options = Array.isArray(event.options) ? (event.options as string[]) : undefined;

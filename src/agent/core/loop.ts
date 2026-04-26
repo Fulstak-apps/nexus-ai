@@ -33,6 +33,7 @@ export type AgentEvent =
   | { type: 'reflection'; stepId: string; quality: string }
   | { type: 'ask_human'; question: string; options?: string[] }
   | { type: 'terminated'; summary: string; success: boolean }
+  | { type: 'usage'; tokens: { input: number; output: number; total: number } }
   | { type: 'done'; finalMessage: string }
   | { type: 'error'; message: string };
 
@@ -230,6 +231,10 @@ export async function* runAgentLoop(
 
   let finalText = '';
   let activeStepIndex = 0;
+  const tokenUsage = { input: 0, output: 0, total: 0 };
+
+  // Rough token estimator (1 token ~ 4 chars). Used when provider doesn't return usage.
+  const estimateTokens = (s: string) => Math.ceil((s ?? '').length / 4);
 
   while (true) {
     if (plan) {
@@ -254,6 +259,7 @@ export async function* runAgentLoop(
           tool_choice: 'auto',
           max_tokens: 4096,
           stream: true,
+          stream_options: { include_usage: true },
         });
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
@@ -270,7 +276,14 @@ export async function* runAgentLoop(
       if (stream) {
         const toolCallAccum = new Map<number, { id: string; name: string; arguments: string }>();
 
-        for await (const chunk of stream as AsyncIterable<OpenAI.Chat.Completions.ChatCompletionChunk>) {
+        for await (const chunk of stream as AsyncIterable<OpenAI.Chat.Completions.ChatCompletionChunk & { usage?: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number } }>) {
+          // Aggregate usage if reported (OpenAI returns it on the final chunk; Ollama may not)
+          if (chunk.usage) {
+            tokenUsage.input  += chunk.usage.prompt_tokens     ?? 0;
+            tokenUsage.output += chunk.usage.completion_tokens ?? 0;
+            tokenUsage.total  += chunk.usage.total_tokens      ?? 0;
+          }
+
           const delta = chunk.choices[0]?.delta;
           if (!delta) continue;
 
@@ -520,12 +533,23 @@ export async function* runAgentLoop(
     { timestamp: Date.now() },
   );
 
+  // Fallback token estimation if provider didn't return usage
+  if (tokenUsage.total === 0) {
+    const inputApprox  = estimateTokens(userMessage) + estimateTokens(history.map(h => h.content).join('\n'));
+    const outputApprox = estimateTokens(finalText);
+    tokenUsage.input  = inputApprox;
+    tokenUsage.output = outputApprox;
+    tokenUsage.total  = inputApprox + outputApprox;
+  }
+  yield { type: 'usage', tokens: { ...tokenUsage } };
+
   const finalMessage: Message = {
     id: randomUUID(),
     role: 'assistant',
     content: finalText,
     timestamp: Date.now(),
     planSnapshot: plan ?? undefined,
+    tokens: { ...tokenUsage },
   };
 
   yield { type: 'message', message: finalMessage };

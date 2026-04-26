@@ -9,9 +9,11 @@ import {
   Database, Globe, Monitor, Palette, Zap, Link2, Puzzle,
   Info, HelpCircle, ChevronRight, ExternalLink, Check, Copy,
   Plus, Trash2, Edit2, AlertTriangle, Loader2, KeyRound, Eye, EyeOff,
+  BookOpen, Play, Pause, RotateCw,
 } from 'lucide-react';
+import { Recipe } from '@/types';
 
-type SettingsPage = 'account' | 'settings' | 'usage' | 'billing' | 'scheduled' | 'mail' | 'data' | 'cloud-browser' | 'my-computer' | 'personalization' | 'skills' | 'connectors' | 'integrations' | 'api-keys' | 'about' | 'help';
+type SettingsPage = 'account' | 'settings' | 'usage' | 'billing' | 'scheduled' | 'recipes' | 'mail' | 'data' | 'cloud-browser' | 'my-computer' | 'personalization' | 'skills' | 'connectors' | 'integrations' | 'api-keys' | 'about' | 'help';
 
 const NAV_ITEMS: { page: SettingsPage; icon: React.ElementType; label: string }[] = [
   { page: 'account',         icon: User,       label: 'Account' },
@@ -19,6 +21,7 @@ const NAV_ITEMS: { page: SettingsPage; icon: React.ElementType; label: string }[
   { page: 'usage',           icon: BarChart2,  label: 'Usage' },
   { page: 'billing',         icon: CreditCard, label: 'Billing' },
   { page: 'scheduled',       icon: Clock,      label: 'Scheduled tasks' },
+  { page: 'recipes',         icon: BookOpen,   label: 'Recipes' },
   { page: 'mail',            icon: Mail,       label: 'Mail Nexus' },
   { page: 'data',            icon: Database,   label: 'Data controls' },
   { page: 'cloud-browser',   icon: Globe,      label: 'Cloud browser' },
@@ -530,6 +533,11 @@ function PageContent({ page }: { page: SettingsPage }) {
   // ── Scheduled ──
   if (page === 'scheduled') {
     return <ScheduledPage />;
+  }
+
+  // ── Recipes ──
+  if (page === 'recipes') {
+    return <RecipesPage />;
   }
 
   // ── Mail ──
@@ -1069,6 +1077,206 @@ function PersonalizationPage() {
       >
         {saved ? <><Check className="w-4 h-4" />Saved</> : 'Save'}
       </button>
+    </div>
+  );
+}
+
+// ─── Recipes page ─────────────────────────────────────────────────────────────
+
+function RecipesPage() {
+  const { recipes, addRecipe, updateRecipe, deleteRecipe, incrementRecipeRunCount, closeSettings } = useAgentStore();
+  const [editing, setEditing] = useState<Recipe | null>(null);
+  const [creating, setCreating] = useState(false);
+
+  const runRecipe = (recipe: Recipe) => {
+    // Substitute variables in prompt
+    let filled = recipe.prompt;
+    if (recipe.variables) {
+      for (const [k, v] of Object.entries(recipe.variables)) {
+        filled = filled.replaceAll(`{{${k}}}`, v);
+      }
+    }
+    incrementRecipeRunCount(recipe.id);
+    closeSettings();
+    // Defer to allow modal close, then dispatch the run via a custom event
+    setTimeout(() => {
+      window.dispatchEvent(new CustomEvent('nexus:run-recipe', { detail: { prompt: filled, recipe } }));
+    }, 80);
+  };
+
+  if (creating || editing) {
+    return (
+      <RecipeEditor
+        recipe={editing}
+        onSave={(data) => {
+          if (editing) updateRecipe(editing.id, data);
+          else addRecipe(data);
+          setCreating(false);
+          setEditing(null);
+        }}
+        onCancel={() => { setCreating(false); setEditing(null); }}
+      />
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-base font-semibold text-[#dadada]">Recipes</h2>
+        <button
+          onClick={() => setCreating(true)}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#1a93fe] hover:bg-[#1080e8] text-white text-sm font-medium"
+        >
+          <Plus className="w-3.5 h-3.5" /> New recipe
+        </button>
+      </div>
+      <p className="text-xs text-[#7f7f7f]">
+        Reusable task templates. Use <code className="bg-white/5 px-1 rounded">{'{{variable}}'}</code> placeholders for dynamic values. Run with one click or via <code className="bg-white/5 px-1 rounded">/recipe</code> in chat.
+      </p>
+
+      {recipes.length === 0 ? (
+        <div className="px-4 py-12 text-center bg-[#272728] rounded-xl border border-[rgba(255,255,255,0.06)]">
+          <BookOpen className="w-8 h-8 text-[#5f5f5f] mx-auto mb-2" />
+          <p className="text-sm text-[#7f7f7f]">No recipes yet. Create one to start.</p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {recipes.map(r => (
+            <div key={r.id} className="px-4 py-3 bg-[#272728] rounded-xl border border-[rgba(255,255,255,0.06)] hover:border-[rgba(255,255,255,0.12)] transition-colors group">
+              <div className="flex items-start gap-3">
+                <div className="text-2xl shrink-0">{r.icon ?? '📄'}</div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <h3 className="text-sm font-semibold text-[#dadada] truncate">{r.name}</h3>
+                    {r.runCount > 0 && (
+                      <span className="text-[10px] text-[#5f5f5f] shrink-0">· {r.runCount} run{r.runCount !== 1 ? 's' : ''}</span>
+                    )}
+                  </div>
+                  <p className="text-xs text-[#7f7f7f] mb-2 line-clamp-2">{r.description}</p>
+                  {r.tags && r.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mb-2">
+                      {r.tags.map(t => (
+                        <span key={t} className="text-[10px] px-1.5 py-0.5 rounded bg-white/5 text-[#7f7f7f]">{t}</span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <div className="flex items-center gap-1 shrink-0">
+                  <button
+                    onClick={() => runRecipe(r)}
+                    title="Run recipe"
+                    className="p-1.5 rounded-lg bg-[rgba(37,186,59,0.10)] hover:bg-[rgba(37,186,59,0.20)] text-[#25ba3b]"
+                  >
+                    <Play className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={() => setEditing(r)}
+                    title="Edit"
+                    className="p-1.5 rounded-lg hover:bg-[rgba(255,255,255,0.06)] text-[#7f7f7f] hover:text-[#dadada]"
+                  >
+                    <Edit2 className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={() => { if (confirm('Delete recipe?')) deleteRecipe(r.id); }}
+                    title="Delete"
+                    className="p-1.5 rounded-lg hover:bg-[rgba(255,40,40,0.10)] text-[#7f7f7f] hover:text-red-400 opacity-0 group-hover:opacity-100"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function RecipeEditor({ recipe, onSave, onCancel }: {
+  recipe: Recipe | null;
+  onSave: (data: Omit<Recipe, 'id' | 'createdAt' | 'updatedAt' | 'runCount'>) => void;
+  onCancel: () => void;
+}) {
+  const [name, setName] = useState(recipe?.name ?? '');
+  const [description, setDescription] = useState(recipe?.description ?? '');
+  const [prompt, setPrompt] = useState(recipe?.prompt ?? '');
+  const [icon, setIcon] = useState(recipe?.icon ?? '✨');
+  const [varText, setVarText] = useState(
+    recipe?.variables ? Object.entries(recipe.variables).map(([k, v]) => `${k}=${v}`).join('\n') : '',
+  );
+  const [tags, setTags] = useState(recipe?.tags?.join(', ') ?? '');
+
+  const save = () => {
+    if (!name.trim() || !prompt.trim()) return;
+    const variables: Record<string, string> = {};
+    for (const line of varText.split('\n')) {
+      const [k, ...rest] = line.split('=');
+      if (k && rest.length) variables[k.trim()] = rest.join('=').trim();
+    }
+    onSave({
+      name: name.trim(),
+      description: description.trim(),
+      prompt: prompt.trim(),
+      icon: icon.trim() || '✨',
+      variables: Object.keys(variables).length ? variables : undefined,
+      tags: tags.split(',').map(t => t.trim()).filter(Boolean),
+    });
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <h2 className="text-base font-semibold text-[#dadada]">{recipe ? 'Edit recipe' : 'New recipe'}</h2>
+        <button onClick={onCancel} className="text-sm text-[#7f7f7f] hover:text-[#dadada]">Cancel</button>
+      </div>
+
+      <div className="space-y-2">
+        <label className="block text-xs text-[#7f7f7f]">Icon (emoji) and Name</label>
+        <div className="flex gap-2">
+          <input value={icon} onChange={e => setIcon(e.target.value)} maxLength={4} className="w-14 text-center bg-[#272728] border border-[rgba(255,255,255,0.10)] rounded-lg px-2 py-2 text-sm text-[#dadada]" />
+          <input value={name} onChange={e => setName(e.target.value)} placeholder="Weekly Status Report" className="flex-1 bg-[#272728] border border-[rgba(255,255,255,0.10)] rounded-lg px-3 py-2 text-sm text-[#dadada] placeholder:text-[#5f5f5f]" />
+        </div>
+      </div>
+
+      <div className="space-y-1">
+        <label className="block text-xs text-[#7f7f7f]">Description</label>
+        <input value={description} onChange={e => setDescription(e.target.value)} placeholder="Short summary of what this does" className="w-full bg-[#272728] border border-[rgba(255,255,255,0.10)] rounded-lg px-3 py-2 text-sm text-[#dadada] placeholder:text-[#5f5f5f]" />
+      </div>
+
+      <div className="space-y-1">
+        <label className="block text-xs text-[#7f7f7f]">Prompt template</label>
+        <textarea
+          value={prompt}
+          onChange={e => setPrompt(e.target.value)}
+          rows={6}
+          placeholder="Use {{variable}} for placeholders that get filled in at run time."
+          className="w-full bg-[#272728] border border-[rgba(255,255,255,0.10)] rounded-lg px-3 py-2 text-sm text-[#dadada] placeholder:text-[#5f5f5f] font-mono resize-none"
+        />
+      </div>
+
+      <div className="space-y-1">
+        <label className="block text-xs text-[#7f7f7f]">Variables (one per line, key=default)</label>
+        <textarea
+          value={varText}
+          onChange={e => setVarText(e.target.value)}
+          rows={3}
+          placeholder="topic=engineering&#10;depth=high"
+          className="w-full bg-[#272728] border border-[rgba(255,255,255,0.10)] rounded-lg px-3 py-2 text-sm text-[#dadada] placeholder:text-[#5f5f5f] font-mono resize-none"
+        />
+      </div>
+
+      <div className="space-y-1">
+        <label className="block text-xs text-[#7f7f7f]">Tags (comma separated)</label>
+        <input value={tags} onChange={e => setTags(e.target.value)} placeholder="research, finance" className="w-full bg-[#272728] border border-[rgba(255,255,255,0.10)] rounded-lg px-3 py-2 text-sm text-[#dadada] placeholder:text-[#5f5f5f]" />
+      </div>
+
+      <div className="flex gap-2 pt-2">
+        <button onClick={save} disabled={!name.trim() || !prompt.trim()} className="flex-1 px-4 py-2 rounded-lg bg-[#1a93fe] hover:bg-[#1080e8] disabled:opacity-40 text-white text-sm font-medium">
+          Save recipe
+        </button>
+        <button onClick={onCancel} className="px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-sm text-[#dadada]">Cancel</button>
+      </div>
     </div>
   );
 }

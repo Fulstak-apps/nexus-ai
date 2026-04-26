@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import { Message, Plan, Session, ThinkingPhase, AgentMode, BackgroundJob, SubAgent } from '@/types';
+import { Message, Plan, Session, ThinkingPhase, AgentMode, BackgroundJob, SubAgent, Recipe } from '@/types';
 
 function uid(): string {
   return typeof crypto !== 'undefined' && 'randomUUID' in crypto
@@ -98,7 +98,7 @@ interface AgentStore {
 
   // Shell state
   settingsOpen: boolean;
-  settingsPage: 'account' | 'settings' | 'usage' | 'billing' | 'scheduled' | 'mail' | 'data' | 'cloud-browser' | 'my-computer' | 'personalization' | 'skills' | 'connectors' | 'integrations' | 'api-keys' | 'about' | 'help';
+  settingsPage: 'account' | 'settings' | 'usage' | 'billing' | 'scheduled' | 'recipes' | 'mail' | 'data' | 'cloud-browser' | 'my-computer' | 'personalization' | 'skills' | 'connectors' | 'integrations' | 'api-keys' | 'about' | 'help';
   credits: number;
   modelLabel: string;
   selectedModelId: 'lite' | 'pro' | 'max';
@@ -128,6 +128,7 @@ interface AgentStore {
   connectors: Connector[];
   integrations: Integration[];
   scheduledTasks: ScheduledTask[];
+  recipes: Recipe[];
 
   // Personalization
   personalization: { aboutYou: string; customInstructions: string };
@@ -155,7 +156,9 @@ interface AgentStore {
   };
 
   // Usage stats
-  usageStats: { creditsUsed: number; creditsTotal: number; tasksRun: number; hoursSaved: number };
+  usageStats: { creditsUsed: number; creditsTotal: number; tasksRun: number; hoursSaved: number; tokensIn: number; tokensOut: number };
+  // Per-session token totals
+  sessionTokens: Record<string, { input: number; output: number; total: number }>;
 
   // Actions
   setPhase: (phase: ThinkingPhase) => void;
@@ -197,6 +200,11 @@ interface AgentStore {
   addIntegration: (integration: Omit<Integration, 'id'>) => void;
   removeIntegration: (id: string) => void;
 
+  addRecipe: (recipe: Omit<Recipe, 'id' | 'createdAt' | 'updatedAt' | 'runCount'>) => string;
+  updateRecipe: (id: string, updates: Partial<Recipe>) => void;
+  deleteRecipe: (id: string) => void;
+  incrementRecipeRunCount: (id: string) => void;
+
   addScheduledTask: (task: Omit<ScheduledTask, 'id'>) => void;
   updateScheduledTask: (id: string, updates: Partial<ScheduledTask>) => void;
   deleteScheduledTask: (id: string) => void;
@@ -209,6 +217,7 @@ interface AgentStore {
   incrementUsage: (creditsUsed?: number) => void;
   setSelectedModel: (id: 'lite' | 'pro' | 'max') => void;
   setPendingQuestion: (q: { question: string; options?: string[] } | null) => void;
+  recordTokenUsage: (input: number, output: number) => void;
   deleteAllData: () => void;
 }
 
@@ -254,6 +263,45 @@ export const useAgentStore = create<AgentStore>()(
       connectors: DEFAULT_CONNECTORS,
       integrations: DEFAULT_INTEGRATIONS,
       scheduledTasks: [],
+      recipes: ([
+        {
+          id: 'recipe-weekly-report',
+          name: 'Weekly Status Report',
+          description: 'Summarize progress this week into a polished report',
+          prompt: 'Search my recent activity, summarize what was accomplished this week, and write a polished weekly status report. Topic: {{topic}}. Include 3 wins, 2 challenges, and next week\'s priorities.',
+          variables: { topic: 'engineering' },
+          tags: ['productivity', 'reporting'],
+          icon: '📋',
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+          runCount: 0,
+        },
+        {
+          id: 'recipe-deep-research',
+          name: 'Deep Research Brief',
+          description: 'Comprehensive research on any topic with sources',
+          prompt: 'Conduct deep research on: {{topic}}. Use web_search for at least 5 angles. Synthesize into a structured brief with: TLDR, key facts, controversies, sources. Include {{depth}} detail.',
+          variables: { topic: 'AI agents 2025', depth: 'medium' },
+          preferredMode: 'research',
+          tags: ['research'],
+          icon: '🔬',
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+          runCount: 0,
+        },
+        {
+          id: 'recipe-stock-snapshot',
+          name: 'Stock Snapshot',
+          description: 'Quick fundamentals + price for any ticker',
+          prompt: 'Pull current stock data for {{ticker}}: latest price, day change, 52-week high/low, recent news context, and a one-paragraph "what to watch" outlook. Use stock_quote then web_search for news.',
+          variables: { ticker: 'NVDA' },
+          tags: ['finance'],
+          icon: '📈',
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+          runCount: 0,
+        },
+      ] as Recipe[]),
 
       personalization: { aboutYou: '', customInstructions: '' },
 
@@ -288,7 +336,10 @@ export const useAgentStore = create<AgentStore>()(
         creditsTotal: 5000,
         tasksRun: 0,
         hoursSaved: 0,
+        tokensIn: 0,
+        tokensOut: 0,
       },
+      sessionTokens: {},
 
       setPhase: (phase) => set({ phase }),
       setCurrentPlan: (plan) => set({ currentPlan: plan }),
@@ -466,6 +517,24 @@ export const useAgentStore = create<AgentStore>()(
         integrations: state.integrations.filter(i => i.id !== id),
       })),
 
+      addRecipe: (recipe) => {
+        const id = uid();
+        const now = Date.now();
+        set(state => ({
+          recipes: [...state.recipes, { ...recipe, id, createdAt: now, updatedAt: now, runCount: 0 }],
+        }));
+        return id;
+      },
+      updateRecipe: (id, updates) => set(state => ({
+        recipes: state.recipes.map(r => r.id === id ? { ...r, ...updates, updatedAt: Date.now() } : r),
+      })),
+      deleteRecipe: (id) => set(state => ({
+        recipes: state.recipes.filter(r => r.id !== id),
+      })),
+      incrementRecipeRunCount: (id) => set(state => ({
+        recipes: state.recipes.map(r => r.id === id ? { ...r, runCount: r.runCount + 1 } : r),
+      })),
+
       addScheduledTask: (task) => {
         const id = uid();
         set(state => ({
@@ -500,6 +569,28 @@ export const useAgentStore = create<AgentStore>()(
       setSelectedModel: (id) => set({ selectedModelId: id }),
       setPendingQuestion: (q) => set({ pendingQuestion: q }),
 
+      recordTokenUsage: (input, output) => set(state => {
+        const sid = state.activeSessionId;
+        const newSessionTokens = sid
+          ? {
+              ...state.sessionTokens,
+              [sid]: {
+                input:  (state.sessionTokens[sid]?.input  ?? 0) + input,
+                output: (state.sessionTokens[sid]?.output ?? 0) + output,
+                total:  (state.sessionTokens[sid]?.total  ?? 0) + input + output,
+              },
+            }
+          : state.sessionTokens;
+        return {
+          usageStats: {
+            ...state.usageStats,
+            tokensIn:  state.usageStats.tokensIn  + input,
+            tokensOut: state.usageStats.tokensOut + output,
+          },
+          sessionTokens: newSessionTokens,
+        };
+      }),
+
       incrementUsage: (creditsUsed = 10) => set(state => ({
         usageStats: {
           ...state.usageStats,
@@ -523,7 +614,8 @@ export const useAgentStore = create<AgentStore>()(
         researchPhase: null,
         scheduledTasks: [],
         personalization: { aboutYou: '', customInstructions: '' },
-        usageStats: { creditsUsed: 0, creditsTotal: 5000, tasksRun: 0, hoursSaved: 0 },
+        usageStats: { creditsUsed: 0, creditsTotal: 5000, tasksRun: 0, hoursSaved: 0, tokensIn: 0, tokensOut: 0 },
+        sessionTokens: {},
       }),
     }),
     {
@@ -544,11 +636,13 @@ export const useAgentStore = create<AgentStore>()(
         connectors: state.connectors,
         integrations: state.integrations,
         scheduledTasks: state.scheduledTasks,
+        recipes: state.recipes,
         personalization: state.personalization,
         dataControls: state.dataControls,
         cloudBrowser: state.cloudBrowser,
         myComputerEnabled: state.myComputerEnabled,
         usageStats: state.usageStats,
+        sessionTokens: state.sessionTokens,
         credits: state.credits,
         apiKeys: state.apiKeys,
       }),
