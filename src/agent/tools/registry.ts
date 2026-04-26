@@ -176,6 +176,29 @@ export const TOOL_REGISTRY: ToolDefinition[] = [
     },
   },
   {
+    name: 'pdf_extract',
+    description: 'Extract readable text from a PDF file. Supports a sandbox filename or a remote URL. Returns parsed text + page count + metadata.',
+    params: {
+      source: { type: 'string', description: 'Sandbox filename (e.g. "report.pdf") OR remote URL', required: true },
+      maxChars: { type: 'number', description: 'Cap returned text length (default 30000)' },
+    },
+  },
+  {
+    name: 'vision_analyze',
+    description: 'Analyze an image using vision-capable AI. Use to understand diagrams, screenshots, photos, or extract text from images. Requires OpenAI key OR a local Ollama vision model (e.g. llava).',
+    params: {
+      source: { type: 'string', description: 'Sandbox image filename OR https URL', required: true },
+      prompt: { type: 'string', description: 'What to look for / question about the image (default: describe the image)' },
+    },
+  },
+  {
+    name: 'deploy_url',
+    description: 'Publish a sandbox file to a shareable public URL on this server. Useful for delivering presentations, dashboards, charts. Returns the URL.',
+    params: {
+      filename: { type: 'string', description: 'Sandbox file to publish', required: true },
+    },
+  },
+  {
     name: 'create_presentation',
     description: 'Generate a polished HTML presentation (slide deck) and save it to the sandbox. Returns the filename.',
     params: {

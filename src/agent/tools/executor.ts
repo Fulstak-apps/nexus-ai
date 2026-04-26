@@ -900,6 +900,115 @@ new Chart(document.getElementById('c'), {
   return { filename, type, title, points: Array.isArray(labels) ? labels.length : 0, saved: true };
 }
 
+// ─── Multimodal + deployment ──────────────────────────────────────────────────
+
+async function handlePdfExtract(params: Record<string, unknown>): Promise<unknown> {
+  const source = String(params.source);
+  const maxChars = Number(params.maxChars ?? 30000);
+  await ensureSandbox();
+
+  let buf: Buffer;
+  if (/^https?:\/\//i.test(source)) {
+    const r = await fetch(source);
+    if (!r.ok) throw new Error(`Fetch failed: ${r.status}`);
+    buf = Buffer.from(await r.arrayBuffer());
+  } else {
+    const p = sandboxPath(source);
+    buf = await fs.readFile(p);
+  }
+
+  const pdfParse = (await import('pdf-parse')).default as (b: Buffer) => Promise<{ text: string; numpages: number; info?: Record<string, unknown> }>;
+  const parsed = await pdfParse(buf);
+  return {
+    pages: parsed.numpages,
+    bytes: buf.length,
+    chars: parsed.text.length,
+    text: parsed.text.slice(0, maxChars),
+    truncated: parsed.text.length > maxChars,
+  };
+}
+
+async function handleVisionAnalyze(params: Record<string, unknown>): Promise<unknown> {
+  const source = String(params.source);
+  const prompt = String(params.prompt ?? 'Describe this image in detail. Note any text, diagrams, or notable features.');
+  await ensureSandbox();
+
+  let dataUrl: string;
+  let base64: string;
+  let mime: string;
+  if (/^https?:\/\//i.test(source)) {
+    const r = await fetch(source);
+    if (!r.ok) throw new Error(`Fetch failed: ${r.status}`);
+    const buf = Buffer.from(await r.arrayBuffer());
+    mime = r.headers.get('content-type') || 'image/png';
+    base64 = buf.toString('base64');
+    dataUrl = `data:${mime};base64,${base64}`;
+  } else {
+    const p = sandboxPath(source);
+    const buf = await fs.readFile(p);
+    const ext = path.extname(source).slice(1).toLowerCase();
+    mime = ext === 'jpg' || ext === 'jpeg' ? 'image/jpeg' : ext === 'webp' ? 'image/webp' : 'image/png';
+    base64 = buf.toString('base64');
+    dataUrl = `data:${mime};base64,${base64}`;
+  }
+
+  const { getUserKey } = await import('../core/anthropic');
+  const openaiKey = getUserKey('openai') || process.env.OPENAI_API_KEY;
+
+  if (openaiKey) {
+    const r = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${openaiKey}` },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [{
+          role: 'user',
+          content: [
+            { type: 'text', text: prompt },
+            { type: 'image_url', image_url: { url: dataUrl } },
+          ],
+        }],
+        max_tokens: 1024,
+      }),
+    });
+    if (!r.ok) throw new Error(`OpenAI vision: ${r.status} ${await r.text().catch(() => '')}`);
+    const data = await r.json() as { choices: Array<{ message: { content: string } }> };
+    return { provider: 'openai', model: 'gpt-4o-mini', analysis: data.choices[0]?.message?.content ?? '' };
+  }
+
+  // Fallback: Ollama vision (llava)
+  const OLLAMA_BASE = (process.env.OLLAMA_BASE_URL || 'http://localhost:11434/v1').replace(/\/v1\/?$/, '');
+  const visionModel = process.env.OLLAMA_VISION_MODEL || 'llava';
+  const r = await fetch(`${OLLAMA_BASE}/api/generate`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ model: visionModel, prompt, images: [base64], stream: false }),
+  });
+  if (!r.ok) throw new Error(`Ollama vision (${visionModel}): ${r.status}. Pull with: ollama pull llava`);
+  const data = await r.json() as { response?: string };
+  return { provider: 'ollama', model: visionModel, analysis: data.response ?? '' };
+}
+
+async function handleDeployUrl(params: Record<string, unknown>): Promise<unknown> {
+  const filename = String(params.filename);
+  await ensureSandbox();
+  const p = sandboxPath(filename);
+  const stat = await fs.stat(p);
+
+  const relative = `/api/preview/${encodeURIComponent(filename)}`;
+  const absolute = process.env.NEXT_PUBLIC_BASE_URL
+    ? `${process.env.NEXT_PUBLIC_BASE_URL.replace(/\/$/, '')}${relative}`
+    : `http://localhost:3000${relative}`;
+
+  return {
+    filename,
+    url: absolute,
+    relativeUrl: relative,
+    bytes: stat.size,
+    note: 'Open the URL in a browser to view.',
+  };
+}
+
 // ─── Dispatch ─────────────────────────────────────────────────────────────────
 
 const HANDLERS: Record<ToolName, (p: Record<string, unknown>) => Promise<unknown>> = {
@@ -925,6 +1034,9 @@ const HANDLERS: Record<ToolName, (p: Record<string, unknown>) => Promise<unknown
   ask_human: handleAskHuman,
   terminate: handleTerminate,
   chart_create: handleChartCreate,
+  pdf_extract: handlePdfExtract,
+  vision_analyze: handleVisionAnalyze,
+  deploy_url: handleDeployUrl,
 };
 
 export async function executeTool(call: ToolCall): Promise<ToolResult> {

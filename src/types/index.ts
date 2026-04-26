@@ -11,7 +11,8 @@ export type ToolName =
   | 'image_generate' | 'spawn_agent'
   | 'create_presentation'
   | 'stock_quote' | 'tts_generate'
-  | 'ask_human' | 'terminate';
+  | 'ask_human' | 'terminate'
+  | 'pdf_extract' | 'vision_analyze' | 'deploy_url';
 export type ThinkingPhase = 'idle' | 'thinking' | 'planning' | 'executing' | 'reflecting';
 export type AgentMode = 'normal' | 'research' | 'background';
 
