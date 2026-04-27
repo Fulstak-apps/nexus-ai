@@ -439,6 +439,41 @@ async function handleBrowserScreenshot(params: Record<string, unknown>): Promise
   return await browserScreenshot(Boolean(params.fullPage));
 }
 
+async function handleBrowserType(params: Record<string, unknown>): Promise<unknown> {
+  const { browserType } = await import('./browser');
+  return await browserType(String(params.selector), String(params.value), Number(params.delay ?? 60));
+}
+
+async function handleBrowserEvaluate(params: Record<string, unknown>): Promise<unknown> {
+  const { browserEvaluate } = await import('./browser');
+  return await browserEvaluate(String(params.script));
+}
+
+async function handleBrowserWaitFor(params: Record<string, unknown>): Promise<unknown> {
+  const { browserWaitFor } = await import('./browser');
+  return await browserWaitFor(String(params.target), String(params.kind ?? 'selector'), Number(params.timeout ?? 10));
+}
+
+async function handleBrowserScroll(params: Record<string, unknown>): Promise<unknown> {
+  const { browserScroll } = await import('./browser');
+  return await browserScroll(String(params.direction ?? 'down'), Number(params.amount ?? 500));
+}
+
+async function handleBrowserGetCookies(params: Record<string, unknown>): Promise<unknown> {
+  const { browserGetCookies } = await import('./browser');
+  return await browserGetCookies(params.domain ? String(params.domain) : undefined);
+}
+
+async function handleBrowserSetCookies(params: Record<string, unknown>): Promise<unknown> {
+  const { browserSetCookies } = await import('./browser');
+  return await browserSetCookies(String(params.cookiesJson));
+}
+
+async function handleBrowserClearCookies(): Promise<unknown> {
+  const { browserClearCookies } = await import('./browser');
+  return await browserClearCookies();
+}
+
 async function handleStockQuote(params: Record<string, unknown>): Promise<unknown> {
   const symbol = String(params.symbol).toUpperCase();
   const range = String(params.range ?? '1mo');
@@ -1046,6 +1081,13 @@ const HANDLERS: Record<ToolName, (p: Record<string, unknown>) => Promise<unknown
   browser_click: handleBrowserClick,
   browser_fill: handleBrowserFill,
   browser_screenshot: handleBrowserScreenshot,
+  browser_type: handleBrowserType,
+  browser_evaluate: handleBrowserEvaluate,
+  browser_wait_for: handleBrowserWaitFor,
+  browser_scroll: handleBrowserScroll,
+  browser_get_cookies: handleBrowserGetCookies,
+  browser_set_cookies: handleBrowserSetCookies,
+  browser_clear_cookies: handleBrowserClearCookies,
   bash: handleBash,
   str_replace: handleStrReplace,
   ask_human: handleAskHuman,

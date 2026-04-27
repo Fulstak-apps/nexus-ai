@@ -183,7 +183,10 @@ export function useAgent() {
               const call = event.call as { id: string; tool: string; params: Record<string, unknown>; startedAt: number };
               const browserKinds: Record<string, 'navigate' | 'click' | 'fill' | 'screenshot' | 'fetch' | 'search'> = {
                 browser_navigate: 'navigate', browser_click: 'click', browser_fill: 'fill',
-                browser_screenshot: 'screenshot', web_fetch: 'fetch', web_search: 'search',
+                browser_screenshot: 'screenshot', browser_type: 'fill',
+                browser_evaluate: 'fetch', browser_wait_for: 'navigate',
+                browser_scroll: 'navigate',
+                web_fetch: 'fetch', web_search: 'search',
               };
               const kind = browserKinds[call.tool];
               if (kind) {

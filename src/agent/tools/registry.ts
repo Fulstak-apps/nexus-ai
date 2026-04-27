@@ -132,6 +132,58 @@ export const TOOL_REGISTRY: ToolDefinition[] = [
     },
   },
   {
+    name: 'browser_type',
+    description: 'Type text character-by-character with realistic keystrokes. Use instead of browser_fill when a site rejects programmatic fill (e.g. Instagram, Twitter login forms). Triggers real keyboard events.',
+    params: {
+      selector: { type: 'string', description: 'CSS selector for the input field', required: true },
+      value: { type: 'string', description: 'Text to type', required: true },
+      delay: { type: 'number', description: 'Milliseconds between keystrokes (default 60)' },
+    },
+  },
+  {
+    name: 'browser_evaluate',
+    description: 'Run arbitrary JavaScript in the current browser page and return the result. Useful for reading DOM state, triggering hidden buttons, or extracting values.',
+    params: {
+      script: { type: 'string', description: 'JavaScript expression or IIFE to evaluate in page context', required: true },
+    },
+  },
+  {
+    name: 'browser_wait_for',
+    description: 'Wait until a CSS selector is visible, a URL is reached, or the network is idle. Use after clicks that trigger navigation or async loading.',
+    params: {
+      target: { type: 'string', description: 'CSS selector, URL pattern, or "networkidle"', required: true },
+      kind: { type: 'string', description: '"selector" (default) | "url" | "network"' },
+      timeout: { type: 'number', description: 'Max wait in seconds (default 10)' },
+    },
+  },
+  {
+    name: 'browser_scroll',
+    description: 'Scroll the active browser page up or down. Useful for loading lazy content or reaching elements below the fold.',
+    params: {
+      direction: { type: 'string', description: '"down" (default) | "up"' },
+      amount: { type: 'number', description: 'Pixels to scroll (default 500)' },
+    },
+  },
+  {
+    name: 'browser_get_cookies',
+    description: 'Return all cookies from the current browser session. Use to check login state or export session cookies.',
+    params: {
+      domain: { type: 'string', description: 'Filter to a specific domain (e.g. ".instagram.com"). Omit for all.' },
+    },
+  },
+  {
+    name: 'browser_set_cookies',
+    description: 'Inject cookies into the browser session to restore a saved login. Pass the JSON array returned by browser_get_cookies.',
+    params: {
+      cookiesJson: { type: 'string', description: 'JSON array of cookie objects (name, value, domain, path)', required: true },
+    },
+  },
+  {
+    name: 'browser_clear_cookies',
+    description: 'Clear all browser cookies and delete the saved session. Use to log out or start a fresh browser session.',
+    params: {},
+  },
+  {
     name: 'bash',
     description: 'Execute a shell command in the sandbox (bash). Output is auto-compressed for common dev commands (git/ls/grep/cat/test runners) — saves 60-90% tokens vs raw. Set raw=true to opt out.',
     params: {

@@ -7,6 +7,8 @@ export type ToolName =
   | 'code_execute' | 'bash' | 'http_request'
   | 'web_search' | 'web_fetch'
   | 'browser_navigate' | 'browser_click' | 'browser_fill' | 'browser_screenshot'
+  | 'browser_type' | 'browser_evaluate' | 'browser_wait_for' | 'browser_scroll'
+  | 'browser_get_cookies' | 'browser_set_cookies' | 'browser_clear_cookies'
   | 'data_analyze' | 'chart_create'
   | 'image_generate' | 'spawn_agent'
   | 'create_presentation'
