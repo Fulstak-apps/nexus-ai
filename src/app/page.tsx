@@ -6,15 +6,18 @@ import { ChatWorkspace } from '@/components/chat/ChatWorkspace';
 import { CommandPalette } from '@/components/command/CommandPalette';
 import { AskHumanModal } from '@/components/chat/AskHumanModal';
 import { BrowserActivityPanel } from '@/components/agent/BrowserActivityPanel';
+import { AgentStatusBar } from '@/components/agent/AgentStatusBar';
 import { TopBar } from '@/components/layout/TopBar';
 import { SettingsModal } from '@/components/layout/SettingsModal';
 import { useAgentStore } from '@/store/agent';
 import { useScheduler } from '@/hooks/useScheduler';
 import { useGlobalShortcuts } from '@/hooks/useGlobalShortcuts';
+import { useAgentNotifications, requestNotificationPermission } from '@/hooks/useAgentNotifications';
 
 export default function Home() {
   useScheduler();
   useGlobalShortcuts();
+  useAgentNotifications();
 
   useEffect(() => {
     // Read synchronously from store so Strict Mode double-fire is safe:
@@ -41,6 +44,9 @@ export default function Home() {
         }),
       }),
     }).catch(() => {});
+
+    // Ask for notification permission once on first load
+    requestNotificationPermission().catch(() => {});
   }, []);
 
   return (
@@ -52,6 +58,7 @@ export default function Home() {
         <main className="flex-1 min-h-0 overflow-hidden">
           <ChatWorkspace />
         </main>
+        <AgentStatusBar />
       </div>
 
       <CommandPalette />
