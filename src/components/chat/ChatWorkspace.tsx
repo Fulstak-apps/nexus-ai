@@ -8,13 +8,13 @@ import { MessageBubble, StreamingBubble } from './MessageBubble';
 import { FloatingInput } from './FloatingInput';
 import { ActivityTimeline } from '@/components/agent/ActivityTimeline';
 
-const SUGGESTION_CHIPS = [
+const SUGGESTION_CHIPS: Array<{ icon: string; text: string; prompt?: string }> = [
   { icon: '🔍', text: 'Research a topic in depth' },
   { icon: '💻', text: 'Write and run code for me' },
+  { icon: '📱', text: 'Log into a website for me', prompt: 'Navigate to instagram.com and take a screenshot of the login page, then tell me what you see and how to proceed.' },
   { icon: '📊', text: 'Analyze a dataset' },
   { icon: '✍️', text: 'Draft a document or report' },
   { icon: '🌐', text: 'Browse the web and summarize' },
-  { icon: '🎯', text: 'Create a project plan' },
 ];
 
 export function ChatWorkspace() {
@@ -52,14 +52,14 @@ export function ChatWorkspace() {
               What can I do for you?
             </h1>
             <p className="text-sm text-[#7f7f7f] mb-10 text-center">
-              Your autonomous AI agent — plan, research, code, and execute.
+              Autonomous AI agent — browse, code, research, and execute like Manus.
             </p>
 
             <div className="grid grid-cols-2 gap-2 w-full max-w-lg">
               {SUGGESTION_CHIPS.map(chip => (
                 <button
                   key={chip.text}
-                  onClick={() => sendMessage(chip.text)}
+                  onClick={() => sendMessage(chip.prompt ?? chip.text)}
                   className="flex items-center gap-2.5 px-4 py-3 rounded-xl bg-[#1e1e1f] border border-[rgba(255,255,255,0.08)] text-left hover:border-[rgba(255,255,255,0.16)] hover:bg-[#252527] transition-all group"
                 >
                   <span className="text-base shrink-0">{chip.icon}</span>
